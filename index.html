@@ -540,7 +540,24 @@
   #map-empty-msg {
     text-align: center; color: var(--text-dim);
     font-size: 12px; padding: 20px 10px;
+    background: var(--surface); border: 1px dashed var(--border);
+    border-radius: var(--radius);
   }
+  .map-help {
+    font-size: 11px; color: var(--text-dim); line-height: 1.4;
+    padding: 8px 10px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .map-help b { color: var(--amber); }
+  .map-locked-note {
+    font-size: 10px; color: var(--text-dim); text-align: center;
+    padding: 8px; opacity: 0.8;
+  }
+  .node-status-line {
+    font-size: 11px; text-align: center; flex: 1; align-self: center;
+    font-weight: 600;
+  }
+  #map-deck.active { gap: 6px; }
 
   /* ── Combat System ── */
   #combat-overlay {
@@ -794,19 +811,21 @@
   .sprite-icon.pop   { background-image: url('assets/icons_resources_core.png'); background-position: 0 -28px; }
   .sprite-icon.sec   { background-image: url('assets/icons_resources_core.png'); background-position: -28px -28px; }
 
-  /* icons_roles.png — 3x2 grid (Forager, Excavator, Soldier / Major, Swarmer, Spitter) */
+  /* icons_roles.png — 3x3 grid; we use rows 0-1 (Forager, Excavator, Soldier / Major, Swarmer, Spitter).
+     Resolution-independent crop: sheet scaled to 300% so each cell == element size, positioned by % */
   .sprite-role {
     background-image: url('assets/icons_roles.png');
-    background-size: 168px 112px;
+    background-size: 300% 300%;
+    background-repeat: no-repeat;
     image-rendering: pixelated;
     width: 40px; height: 40px;
   }
-  .sprite-role.forager   { background-position: 0 0; }
-  .sprite-role.excavator { background-position: -40px 0; }
-  .sprite-role.soldier   { background-position: -80px 0; }
-  .sprite-role.major     { background-position: 0 -40px; }
-  .sprite-role.swarmer   { background-position: -40px -40px; }
-  .sprite-role.spitter   { background-position: -80px -40px; }
+  .sprite-role.forager   { background-position: 0%   0%; }
+  .sprite-role.excavator { background-position: 50%  0%; }
+  .sprite-role.soldier   { background-position: 100% 0%; }
+  .sprite-role.major     { background-position: 0%   50%; }
+  .sprite-role.swarmer   { background-position: 50%  50%; }
+  .sprite-role.spitter   { background-position: 100% 50%; }
 
   /* ── Panel Textures ── */
   .deck-section,
@@ -921,24 +940,120 @@
   .trail-line.breached  { background-position-y: -80px; }
   .trail-line.repaired  { background-position-y: -96px; }
 
-  /* ── Resource Sparkle ── */
-  .resource-sparkle {
-    animation: sparklePop 0.6s ease-out;
-    position: absolute;
-    pointer-events: none;
+  /* ── Combat unit chips — clean transparent role icons (icons_roles 3x3 crop) ── */
+  .ant-sprite {
+    background-image: url('assets/icons_roles.png');
+    background-size: 300% 300%;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    width: 30px; height: 30px;
+    display: inline-block;
   }
-  @keyframes sparklePop {
-    0%   { transform: scale(0.3); opacity: 1; }
-    100% { transform: scale(1.5); opacity: 0; }
+  .ant-sprite.major   { background-position: 0%   50%; }
+  .ant-sprite.swarmer { background-position: 50%  50%; }
+  .ant-sprite.spitter { background-position: 100% 50%; }
+
+  /* ── Enemy-type Sprites ── */
+  .enemy-sprite.scavenger {
+    background-image: url('assets/enemy_soft_scavenger_sheet.png');
+    background-size: 384px 64px;
+    image-rendering: pixelated;
+    width: 64px; height: 64px;
+    display: inline-block;
+  }
+  .enemy-sprite.predator {
+    background-image: url('assets/enemy_fast_predator_sheet.png');
+    background-size: 576px 96px;
+    image-rendering: pixelated;
+    width: 72px; height: 72px;
+    display: inline-block;
+  }
+  .enemy-sprite.flying {
+    background-image: url('assets/enemy_flying_threat_sheet.png');
+    background-size: 384px 64px;
+    image-rendering: pixelated;
+    width: 56px; height: 56px;
+    display: inline-block;
+  }
+  .enemy-sprite.boss {
+    background-image: url('assets/enemy_heavy_boss_sheet.png');
+    background-size: 768px 128px;
+    image-rendering: pixelated;
+    width: 96px; height: 96px;
+    display: inline-block;
+  }
+  /* Default armored beetle already at #battle-enemy-sprite */
+
+  /* ── Bite Impact Effect ── */
+  .fx-bite {
+    background-image: url('assets/fx_bite_impact.png');
+    background-size: 288px 96px;
+    image-rendering: pixelated;
+    width: 64px; height: 64px;
+    position: absolute; pointer-events: none;
+    animation: biteAnim 0.3s steps(3) forwards;
+  }
+  @keyframes biteAnim {
+    0% { background-position: 0 0; opacity: 1; }
+    100% { background-position: -192px 0; opacity: 0; }
   }
 
-  /* ── Status Warning Pulse ── */
-  .warning-pulse {
-    animation: warningGlow 1.5s ease-in-out infinite;
+  /* ── Action Icon Button ── */
+  .icon-action {
+    background-image: url('assets/icons_actions.png');
+    background-size: 512px 256px;
+    image-rendering: pixelated;
+    width: 20px; height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
   }
-  @keyframes warningGlow {
-    0%,100% { box-shadow: 0 0 4px rgba(212,64,58,0.3); }
-    50%     { box-shadow: 0 0 12px rgba(212,64,58,0.6); }
+  .icon-action.scout  { background-position: 0 0; }
+  .icon-action.siege  { background-position: -20px 0; }
+  .icon-action.claim  { background-position: -40px 0; }
+  .icon-action.repair { background-position: -60px 0; }
+
+  /* ── Warning Icon ── */
+  .icon-warn {
+    background-image: url('assets/icons_warnings.png');
+    background-size: 512px 256px;
+    image-rendering: pixelated;
+    width: 20px; height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .icon-warn.breach   { background-position: 0 0; }
+  .icon-warn.predator { background-position: -20px 0; }
+  .icon-warn.hunger   { background-position: -40px 0; }
+  .icon-warn.starve   { background-position: -60px 0; }
+
+  /* ── Breach Trail Overlay ── */
+  .fx-breach-overlay {
+    background-image: url('assets/fx_supply_breach.png');
+    background-size: 512px 128px;
+    image-rendering: pixelated;
+    width: 80px; height: 20px;
+    position: absolute; pointer-events: none;
+    animation: breachPulse 1s ease-in-out infinite;
+  }
+  @keyframes breachPulse {
+    0%,100% { opacity: 0.6; }
+    50%     { opacity: 1; background-position: -128px 0; }
+  }
+
+  /* ── Winged Queen (Prestige) ── */
+  .queen-sprite {
+    background-image: url('assets/ant_winged_queen_sheet.png');
+    background-size: 576px 96px;
+    image-rendering: pixelated;
+    width: 72px; height: 72px;
+    margin: 8px auto;
+    display: block;
+    animation: queenFloat 3s ease-in-out infinite;
+  }
+  @keyframes queenFloat {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-6px); }
   }
 </style>
 </head>
@@ -1707,23 +1822,29 @@ function selectMapNode(nodeId) {
   renderMapDeck();
 }
 
+function nodeRewardSummary(nd) {
+  const r = [];
+  if (nd.reward.foodMult) r.push(`+${(nd.reward.foodMult * 100).toFixed(0)}% Food`);
+  if (nd.reward.matsMult) r.push(`+${(nd.reward.matsMult * 100).toFixed(0)}% Materials`);
+  if (nd.reward.growthMult) r.push(`+${(nd.reward.growthMult * 100).toFixed(0)}% Growth`);
+  if (nd.reward.foodCapBonus) r.push(`+${nd.reward.foodCapBonus} Food cap`);
+  if (nd.reward.matsCapBonus) r.push(`+${nd.reward.matsCapBonus} Mats cap`);
+  return r.join(' · ');
+}
+
 function renderMapDeck() {
-  const container = document.getElementById('map-node-detail');
   const s = G;
-  const selectedId = s.map.selectedNode;
 
-  if (!selectedId) {
-    container.innerHTML = '<div id="map-empty-msg">Tap a node on the map to inspect it.</div>';
-    return;
-  }
-
-  const nd = getMapNodeDef(selectedId);
-  const st = getNodeState(s, selectedId);
-  if (!nd || !st) return;
+  // ── Supply status (always kept current, plain language) ──
+  const supplyEl = document.getElementById('supply-summary');
+  supplyEl.className = getSupplyLineStatus(s);
+  document.getElementById('supply-text').textContent = getSupplyLineStatusLabel(s);
+  const claimedCount = getClaimedNodes(s).length;
+  document.getElementById('supply-sec-text').textContent = claimedCount > 0 ? `🏁 ${claimedCount} claimed` : '';
 
   const stateLabels = {
-    hidden: 'Hidden', scoutable: 'Scoutable', scouting: 'Scouting',
-    revealed: 'Siege Ready', under_siege: 'Under Siege', claimed: 'Claimed',
+    hidden: 'Hidden', scoutable: 'New Site', scouting: 'Scouting',
+    revealed: 'Ready to Attack', under_siege: 'Under Siege', claimed: 'Claimed',
     threatened: 'Threatened', breached: 'Breached'
   };
   const stateBadgeClasses = {
@@ -1731,80 +1852,90 @@ function renderMapDeck() {
     revealed: 'badge-revealed', under_siege: 'badge-siege', claimed: 'badge-claimed',
     threatened: 'badge-threatened', breached: 'badge-breached'
   };
-
-  let rewardHtml = '';
-  if (nd.reward.foodMult) rewardHtml += `<div class="node-reward">+${(nd.reward.foodMult * 100).toFixed(0)}% Food production</div>`;
-  if (nd.reward.matsMult) rewardHtml += `<div class="node-reward">+${(nd.reward.matsMult * 100).toFixed(0)}% Materials production</div>`;
-  if (nd.reward.growthMult) rewardHtml += `<div class="node-reward">+${(nd.reward.growthMult * 100).toFixed(0)}% Growth speed</div>`;
-  if (nd.reward.foodCapBonus) rewardHtml += `<div class="node-reward">+${nd.reward.foodCapBonus} Food capacity</div>`;
-  if (nd.reward.matsCapBonus) rewardHtml += `<div class="node-reward">+${nd.reward.matsCapBonus} Materials capacity</div>`;
-
-  let timerHtml = '';
   const tMul = getBiomeModifiers().timerMult;
-  if (st.state === 'scouting') {
-    const fullScout = nd.scoutSec * tMul;
-    const pct = st.scoutTimer > 0 ? Math.max(0, Math.min(100, (1 - st.scoutTimer / fullScout) * 100)).toFixed(0) : 0;
-    timerHtml = `<div class="timer-bar-wrap"><div class="timer-bar-fill scout" style="width:${pct}%"></div></div>`;
-  } else if (st.state === 'under_siege') {
-    const fullSiege = nd.siegeSec * tMul;
-    const pct = st.siegeTimer > 0 ? Math.max(0, Math.min(100, (1 - st.siegeTimer / fullSiege) * 100)).toFixed(0) : 0;
-    timerHtml = `<div class="timer-bar-wrap"><div class="timer-bar-fill siege" style="width:${pct}%"></div></div>`;
-  } else if (st.state === 'threatened') {
-    const effGrace = MAP_CONFIG.breachGraceSeconds * (1 + (getPrestigeModifiers().breachResistance || 0));
-    const pct = Math.min(100, ((st.breachTimer || 0) / effGrace) * 100).toFixed(0);
-    timerHtml = `<div class="timer-bar-wrap"><div class="timer-bar-fill breach" style="width:${pct}%"></div></div>
-      <div style="font-size:10px;color:var(--red);margin-top:2px;">Breach in ${Math.max(0, Math.ceil(effGrace - (st.breachTimer || 0)))}s</div>`;
+
+  let html = `<div class="map-help">🧭 <b>Scout → Attack → Claim</b> sites for permanent colony bonuses. Keep Soldiers assigned to defend claimed territory.</div>`;
+
+  const visible = MAP_CONFIG.mapNodes.filter(nd => getNodeState(s, nd.id).state !== 'hidden');
+  const hiddenCount = MAP_CONFIG.mapNodes.length - visible.length;
+
+  if (visible.length === 0) {
+    html += `<div id="map-empty-msg">No sites discovered yet. Tap the glowing <b>🔍 node</b> on the map above to scout your first territory.</div>`;
+  } else {
+    visible.forEach(nd => {
+      const st = getNodeState(s, nd.id);
+      const selected = s.map.selectedNode === nd.id;
+
+      let timerHtml = '';
+      if (st.state === 'scouting') {
+        const pct = st.scoutTimer > 0 ? Math.max(0, Math.min(100, (1 - st.scoutTimer / (nd.scoutSec * tMul)) * 100)).toFixed(0) : 0;
+        timerHtml = `<div class="timer-bar-wrap"><div class="timer-bar-fill scout" style="width:${pct}%"></div></div>`;
+      } else if (st.state === 'threatened') {
+        const effGrace = MAP_CONFIG.breachGraceSeconds * (1 + (getPrestigeModifiers().breachResistance || 0));
+        const pct = Math.min(100, ((st.breachTimer || 0) / effGrace) * 100).toFixed(0);
+        timerHtml = `<div class="timer-bar-wrap"><div class="timer-bar-fill breach" style="width:${pct}%"></div></div>
+          <div style="font-size:10px;color:var(--red);margin-top:2px;">Breaches in ${Math.max(0, Math.ceil(effGrace - (st.breachTimer || 0)))}s — assign Soldiers</div>`;
+      }
+
+      let actionHtml = '';
+      if (st.state === 'scoutable') {
+        actionHtml = `<button class="btn-node-action ready" data-action="scout" data-node="${nd.id}">🔍 Scout (${Math.ceil(nd.scoutSec * tMul)}s)</button>`;
+      } else if (st.state === 'scouting') {
+        actionHtml = `<div class="node-status-line" style="color:var(--blue);">⏳ Scouting… ${Math.ceil(st.scoutTimer)}s left</div>`;
+      } else if (st.state === 'revealed') {
+        actionHtml = s.assigned.soldiers > 0
+          ? `<button class="btn-node-action ready" data-action="attack" data-node="${nd.id}">⚔️ Attack</button>`
+          : `<button class="btn-node-action" data-action="attack" data-node="${nd.id}" disabled>⚔️ Attack</button>
+             <div class="node-status-line" style="color:var(--red);">Assign Soldiers first</div>`;
+      } else if (st.state === 'claimed') {
+        actionHtml = `<div class="node-status-line" style="color:var(--green-bright);">✓ Claimed — bonus active</div>`;
+      } else if (st.state === 'threatened') {
+        actionHtml = `<div class="node-status-line" style="color:var(--red);">⚠️ Supply line under pressure</div>`;
+      } else if (st.state === 'breached') {
+        actionHtml = `<button class="btn-node-action danger" data-action="repair" data-node="${nd.id}">🔧 Repair (${MAP_CONFIG.nodeRepairCost} Mats)</button>`;
+      }
+
+      const rewards = nodeRewardSummary(nd);
+      html += `
+        <div class="node-card${selected ? ' selected' : ''}" data-node="${nd.id}">
+          <div class="node-header">
+            <span class="node-state-badge ${stateBadgeClasses[st.state] || 'badge-hidden'}">${stateLabels[st.state] || st.state}</span>
+            <span class="node-name">${nd.name}</span>
+          </div>
+          ${rewards ? `<div class="node-reward">🎁 ${rewards}</div>` : ''}
+          <div class="node-info-row">
+            <span class="node-info-item">Threat: <span class="val" style="color:var(--red);">${nd.threat}</span></span>
+            <span class="node-info-item">Supply cost: <span class="val">${nd.distance}</span></span>
+          </div>
+          ${timerHtml}
+          <div class="node-action-row">${actionHtml}</div>
+        </div>`;
+    });
   }
 
-  let actionHtml = '';
-  if (st.state === 'scoutable') {
-    actionHtml = `<button class="btn-node-action ready" id="btn-scout">🔍 Scout (${Math.ceil(nd.scoutSec * tMul)}s)</button>`;
-  } else if (st.state === 'scouting') {
-    actionHtml = `<div style="font-size:11px;color:var(--blue);text-align:center;">Scouting... ${Math.ceil(st.scoutTimer)}s remaining</div>`;
-  } else if (st.state === 'revealed') {
-    actionHtml = s.assigned.soldiers > 0
-      ? `<button class="btn-node-action ready" id="btn-siege">⚔️ Attack</button>`
-      : `<button class="btn-node-action" id="btn-siege" disabled>⚔️ Attack</button>
-         <div style="font-size:10px;color:var(--red);text-align:center;flex:1;align-self:center;">Assign Soldiers before attacking</div>`;
-  } else if (st.state === 'under_siege') {
-    actionHtml = `<div style="font-size:11px;color:var(--red-bright);text-align:center;">Besieging... ${Math.ceil(st.siegeTimer)}s remaining</div>`;
-  } else if (st.state === 'claimed') {
-    actionHtml = `<div style="font-size:11px;color:var(--green-bright);text-align:center;">✓ Claimed — bonus active</div>`;
-  } else if (st.state === 'threatened') {
-    actionHtml = `<div style="font-size:11px;color:var(--red);text-align:center;">⚠️ Supply line under pressure — assign more Soldiers</div>`;
-  } else if (st.state === 'breached') {
-    actionHtml = `<button class="btn-node-action danger" id="btn-repair">🔧 Repair (${MAP_CONFIG.nodeRepairCost} Mats)</button>`;
+  if (hiddenCount > 0) {
+    html += `<div class="map-locked-note">🔒 ${hiddenCount} more site${hiddenCount > 1 ? 's' : ''} hidden — claim adjacent sites to reveal them.</div>`;
   }
 
-  container.innerHTML = `
-    <div class="node-card selected">
-      <div class="node-header">
-        <span class="node-state-badge ${stateBadgeClasses[st.state] || 'badge-hidden'}">${stateLabels[st.state] || st.state}</span>
-        <span class="node-name">${nd.name}</span>
-      </div>
-      <div class="node-desc">${nd.desc}</div>
-      ${rewardHtml}
-      <div class="node-info-row">
-        <span class="node-info-item">Dist: <span class="val">${nd.distance}</span></span>
-        <span class="node-info-item">Threat: <span class="val" style="color:var(--red);">${nd.threat}</span></span>
-      </div>
-      ${timerHtml}
-      <div class="node-action-row">${actionHtml}</div>
-    </div>
-  `;
+  const container = document.getElementById('map-node-detail');
+  container.innerHTML = html;
 
-  const btnScout = document.getElementById('btn-scout');
-  if (btnScout) btnScout.addEventListener('click', () => { startScout(selectedId); renderMapViewport(); renderMapDeck(); });
-  const btnSiege = document.getElementById('btn-siege');
-  if (btnSiege) btnSiege.addEventListener('click', () => { showCombatPreview(selectedId); });
-  const btnRepair = document.getElementById('btn-repair');
-  if (btnRepair) btnRepair.addEventListener('click', () => { repairNode(selectedId); renderMapViewport(); renderMapDeck(); });
-
-  const supplyEl = document.getElementById('supply-summary');
-  const supplyStatus = getSupplyLineStatus(s);
-  supplyEl.className = supplyStatus;
-  document.getElementById('supply-text').textContent = getSupplyLineStatusLabel(s);
-  document.getElementById('supply-sec-text').textContent = `Supply Dist: ${getTotalSupplyDistance(s)}`;
+  // Action buttons (don't let the click bubble to the card-select handler)
+  container.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.node, act = btn.dataset.action;
+      if (act === 'attack') { showCombatPreview(id); return; }
+      if (act === 'scout') startScout(id);
+      else if (act === 'repair') repairNode(id);
+      renderMapViewport();
+      renderMapDeck();
+    });
+  });
+  // Tapping a card highlights that node on the map
+  container.querySelectorAll('.node-card').forEach(card => {
+    card.addEventListener('click', () => selectMapNode(card.dataset.node));
+  });
 }
 
 function switchTab(tab) {
@@ -1982,19 +2113,20 @@ function addCombatEvent(type, msg) {
 function renderCombatArena() {
   if (!G.combat || !G.combat.active) return;
   const c = G.combat;
-  document.getElementById('battle-enemy').textContent = '';
+  // Show the enemy as its crisp emoji glyph (clear silhouette at a glance).
+  // The detailed enemy sheets are irregular animation sheets that need proper
+  // frame slicing before they can be shown without distortion.
+  const enemyEl = document.getElementById('battle-enemy');
+  enemyEl.textContent = c.enemy.icon;
+  enemyEl.style.fontSize = '56px';
   const enemySprite = document.getElementById('battle-enemy-sprite');
-  enemySprite.style.display = 'block';
-  // Update enemy sprite based on type (use armored beetle as default)
-  if (c.enemy.icon === '🪲' || c.enemy.icon === '🪳') {
-    enemySprite.style.backgroundImage = "url('assets/enemy_armored_beetle_sheet.png')";
-  }
+  if (enemySprite) enemySprite.style.display = 'none';
 
   const u = c.calc.units;
   let antsHtml = '';
-  for (let i = 0; i < Math.min(u.majors, 6); i++) antsHtml += '<span class="sprite-role major" style="display:inline-block;width:24px;height:24px;background-size:100px 67px;"></span>';
-  for (let i = 0; i < Math.min(u.swarmers, 6); i++) antsHtml += '<span class="sprite-role swarmer" style="display:inline-block;width:24px;height:24px;background-size:100px 67px;"></span>';
-  for (let i = 0; i < Math.min(u.spitters, 4); i++) antsHtml += '<span class="sprite-role spitter" style="display:inline-block;width:24px;height:24px;background-size:100px 67px;"></span>';
+  for (let i = 0; i < Math.min(u.majors, 6); i++) antsHtml += '<span class="ant-sprite major"></span>';
+  for (let i = 0; i < Math.min(u.swarmers, 6); i++) antsHtml += '<span class="ant-sprite swarmer"></span>';
+  for (let i = 0; i < Math.min(u.spitters, 4); i++) antsHtml += '<span class="ant-sprite spitter"></span>';
   document.getElementById('battle-ants-row').innerHTML = antsHtml;
 }
 
@@ -2029,12 +2161,21 @@ function tickCombat(dt) {
     stage.classList.add('battle-shake');
     stage.classList.add('battle-hit-flash');
     if (isPlayerHit) {
-      const shellCrack = document.createElement('div');
-      shellCrack.className = 'fx-shell-crack';
-      shellCrack.style.left = (30 + Math.random() * 40) + '%';
-      shellCrack.style.top = (20 + Math.random() * 30) + '%';
-      stage.appendChild(shellCrack);
-      setTimeout(() => shellCrack.remove(), 450);
+      if (c.calc.units.majors > c.calc.units.swarmers) {
+        const shellCrack = document.createElement('div');
+        shellCrack.className = 'fx-shell-crack';
+        shellCrack.style.left = (30 + Math.random() * 40) + '%';
+        shellCrack.style.top = (20 + Math.random() * 30) + '%';
+        stage.appendChild(shellCrack);
+        setTimeout(() => shellCrack.remove(), 450);
+      } else {
+        const bite = document.createElement('div');
+        bite.className = 'fx-bite';
+        bite.style.left = (35 + Math.random() * 30) + '%';
+        bite.style.top = (25 + Math.random() * 30) + '%';
+        stage.appendChild(bite);
+        setTimeout(() => bite.remove(), 350);
+      }
 
       const ichor = document.createElement('div');
       ichor.className = 'fx-ichor';
@@ -2042,13 +2183,6 @@ function tickCombat(dt) {
       ichor.style.top = (30 + Math.random() * 30) + '%';
       stage.appendChild(ichor);
       setTimeout(() => ichor.remove(), 550);
-
-      const bite = document.createElement('div');
-      bite.className = 'fx-bite';
-      bite.style.left = (35 + Math.random() * 35) + '%';
-      bite.style.top = (25 + Math.random() * 30) + '%';
-      stage.appendChild(bite);
-      setTimeout(() => bite.remove(), 400);
     } else {
       const acid = document.createElement('div');
       acid.className = 'fx-acid';
@@ -2259,6 +2393,7 @@ function renderPrestigePanel(step) {
     const isFirstPrestige = s.prestige.generation === 0;
     window._prestigeStep = 'confirm';
     panel.innerHTML = `
+      <div class="queen-sprite"></div>
       <h2>🦋 Nuptial Flight</h2>
       <h3>${isFirstPrestige ? 'Your colony has reached its limit. Launch a new generation.' : `Begin Generation ${nextGen} in a new colony.`}</h3>
       <div class="prestige-section">
@@ -2584,7 +2719,7 @@ function buildAllocationUI() {
   container.innerHTML = roles.map(r => `
     <div class="alloc-row" data-role="${r.id}">
       <div class="alloc-icon ${r.cls}" title="${r.iconDesc}">
-        <span class="sprite-role ${r.id === 'foragers' ? 'forager' : r.id === 'excavators' ? 'excavator' : 'soldier'}" style="display:block;width:100%;height:100%;background-size:120px 80px;"></span>
+        <span class="sprite-role ${r.id === 'foragers' ? 'forager' : r.id === 'excavators' ? 'excavator' : 'soldier'}" style="display:block;width:100%;height:100%;"></span>
       </div>
       <div class="alloc-body">
         <div class="alloc-name">${r.name}</div>
@@ -2651,7 +2786,7 @@ function updateStanceUI() {
   });
   const preview = document.getElementById('stance-preview');
   if (preview) {
-    preview.textContent = `🛡️${(stance.major*100).toFixed(0)}% Majors · ⚔️${(stance.swarmer*100).toFixed(0)}% Swarmers · 🏹${(stance.spitter*100).toFixed(0)}% Spitters`;
+    preview.innerHTML = `<span class="ant-sprite major" style="width:22px;height:22px;vertical-align:middle;"></span> ${(stance.major*100).toFixed(0)}% · <span class="ant-sprite swarmer" style="width:22px;height:22px;vertical-align:middle;"></span> ${(stance.swarmer*100).toFixed(0)}% · <span class="ant-sprite spitter" style="width:22px;height:22px;vertical-align:middle;"></span> ${(stance.spitter*100).toFixed(0)}%`;
   }
 }
 
@@ -2855,9 +2990,11 @@ function updateStatusStrip(s, rates) {
   };
 
   if (hasBreached) {
-    icon.textContent = '💀'; text.textContent = 'SUPPLY LINE BREACHED — node rewards lost';
+    icon.innerHTML = '<span class="icon-warn breach"></span>';
+    text.textContent = 'SUPPLY LINE BREACHED — node rewards lost';
   } else if (hasThreatened) {
-    icon.textContent = '⚠️'; text.textContent = 'Supply lines strained — assign more Soldiers';
+    icon.innerHTML = '<span class="icon-warn predator"></span>';
+    text.textContent = 'Supply lines strained — assign more Soldiers';
   } else {
     const st = states[status] || states.stable;
     icon.textContent = st.icon;
