@@ -1127,6 +1127,7 @@ const CONFIG = {
   baseFoodCap: 80,
   baseMatsCap: 40,
   securityMax: 200,
+  securityDecayPerSec: 0.02,
 
   starvationThreshold: 0.10,
   hungryThreshold: 0.20,
@@ -1388,7 +1389,9 @@ function tick(s, deltaSec, skipBreaches) {
 
   s.resources.food += netFood;
   s.resources.materials += matsProd;
-  s.security += secProd;
+  // Security is actively maintained: it decays toward the level the current
+  // soldier count can sustain, so banking it once no longer guarantees safety.
+  s.security = Math.max(0, s.security - s.security * CONFIG.securityDecayPerSec * dt) + secProd;
 
   s.resources.food = Math.max(0, Math.min(s.caps.food, s.resources.food));
   s.resources.materials = Math.max(0, Math.min(s.caps.materials, s.resources.materials));
@@ -1438,7 +1441,7 @@ function getNetRates(s) {
   if (netFood > 0 && s.resources.food >= foodCap) netFood = 0;
   let matsRate = a.excavators * CONFIG.matsPerExcavatorPerSec * nm.matsMult;
   if (matsRate > 0 && s.resources.materials >= matsCap) matsRate = 0;
-  const secRate = a.soldiers * CONFIG.secPerSoldierPerSec * securityMultiplier(s);
+  const secRate = a.soldiers * CONFIG.secPerSoldierPerSec * securityMultiplier(s) - s.security * CONFIG.securityDecayPerSec;
 
   const excessForGrowth = foodRatio > CONFIG.starvationThreshold ? Math.max(0, foodRatio - CONFIG.starvationThreshold) : 0;
   const productionPenalty = foodRatio <= CONFIG.starvationThreshold ? 0.5 : (foodRatio <= CONFIG.hungryThreshold ? 0.8 : 1.0);
@@ -1504,26 +1507,12 @@ function canScoutNode(s, nodeId) {
   return st && st.state === 'scoutable';
 }
 
-function canSiegeNode(s, nodeId) {
-  const st = getNodeState(s, nodeId);
-  return st && st.state === 'revealed';
-}
-
 function startScout(nodeId) {
   const st = getNodeState(G, nodeId);
   const def = getMapNodeDef(nodeId);
   if (!st || st.state !== 'scoutable' || !def) return;
   st.state = 'scouting';
   st.scoutTimer = def.scoutSec * getBiomeModifiers().timerMult;
-  updateUI();
-}
-
-function startSiege(nodeId) {
-  const st = getNodeState(G, nodeId);
-  const def = getMapNodeDef(nodeId);
-  if (!st || st.state !== 'revealed' || !def) return;
-  st.state = 'under_siege';
-  st.siegeTimer = def.siegeSec * getBiomeModifiers().timerMult;
   updateUI();
 }
 
@@ -1760,7 +1749,10 @@ function renderMapDeck() {
   } else if (st.state === 'scouting') {
     actionHtml = `<div style="font-size:11px;color:var(--blue);text-align:center;">Scouting... ${Math.ceil(st.scoutTimer)}s remaining</div>`;
   } else if (st.state === 'revealed') {
-    actionHtml = `<button class="btn-node-action ready" id="btn-siege">⚔️ Attack</button>`;
+    actionHtml = s.assigned.soldiers > 0
+      ? `<button class="btn-node-action ready" id="btn-siege">⚔️ Attack</button>`
+      : `<button class="btn-node-action" id="btn-siege" disabled>⚔️ Attack</button>
+         <div style="font-size:10px;color:var(--red);text-align:center;flex:1;align-self:center;">Assign Soldiers before attacking</div>`;
   } else if (st.state === 'under_siege') {
     actionHtml = `<div style="font-size:11px;color:var(--red-bright);text-align:center;">Besieging... ${Math.ceil(st.siegeTimer)}s remaining</div>`;
   } else if (st.state === 'claimed') {
@@ -2222,9 +2214,10 @@ function showPrestigeModal() {
   const nextBiomeKey = G.prestige.generation === 0 ? PRESTIGE_CONFIG.prestigeBiome : PRESTIGE_CONFIG.defaultBiome;
   const nextBiome = PRESTIGE_CONFIG.biomes[nextBiomeKey];
   const nextGen = (G.prestige.generation || 0) + 1;
+  // Offer un-owned mutations; once all are owned, allow re-picking any to
+  // stack its effect again (without wiping the permanently earned mutations).
   const availableMutations = PRESTIGE_CONFIG.mutations.filter(m => !G.prestige.mutations.includes(m.id));
   if (availableMutations.length === 0) {
-    G.prestige.mutations = [];
     PRESTIGE_CONFIG.mutations.forEach(m => availableMutations.push(m));
   }
 
@@ -2279,7 +2272,6 @@ function renderPrestigePanel(step) {
     window._prestigeStep = 'mutations';
     const availableMutations = PRESTIGE_CONFIG.mutations.filter(m => !s.prestige.mutations.includes(m.id));
     if (availableMutations.length === 0) {
-      s.prestige.mutations = [];
       PRESTIGE_CONFIG.mutations.forEach(m => availableMutations.push(m));
     }
     if (!availableMutations.find(m => m.id === window._pendingMutation)) {
@@ -2723,7 +2715,9 @@ function updateUI() {
   matsRateEl.textContent = '+' + rates.matsRate.toFixed(1) + '/s';
   matsRateEl.className = 'rh-rate pos';
 
-  document.getElementById('rh-sec-rate').textContent = '+' + rates.secRate.toFixed(1) + '/s';
+  const secRateEl = document.getElementById('rh-sec-rate');
+  secRateEl.textContent = (rates.secRate >= 0 ? '+' : '') + rates.secRate.toFixed(1) + '/s';
+  secRateEl.className = 'rh-rate ' + (rates.secRate >= 0 ? 'pos' : 'neg');
 
   const idle = unassigned(s);
   const popDetailEl = document.getElementById('rh-pop-detail');
@@ -2899,7 +2893,7 @@ const ONBOARD_STEPS = [
   },
   {
     icon: '🛡️', title: 'Soldiers Provide Security',
-    body: 'Soldiers generate Security. For now this is a passive score. In future milestones, Security will determine your colony\'s survival in combat.'
+    body: 'Soldiers generate Security to defend your supply lines. Security slowly decays, so you must keep Soldiers assigned to hold claimed territory — pull them away and distant nodes can be breached.'
   },
   {
     icon: '📦', title: 'Upgrade Your Nest',
