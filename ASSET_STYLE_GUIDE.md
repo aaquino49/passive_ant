@@ -378,8 +378,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a pixel art node tile state sheet for Compost Edge in a mobile ant colony game. Dark organic mound, fungi, scraps, humid glow. Include locked, scoutable, scouting, revealed, under-siege, claimed, threatened, breached. No text.
   - Review Notes:
 
-- [ ] Asset: Fallen Plum node tile set
-  - Status: Needed
+- [x] Asset: Fallen Plum node tile set
+  - Status: Integrated
   - Priority: P1
   - Milestone: M3
   - Filename: `node_fallen_plum_states.png`
@@ -492,8 +492,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a transparent PNG pixel art acid projectile effect sheet. Yellow-green corrosive line, launch, travel, impact, sizzling puddle, readable on mobile, no text.
   - Review Notes:
 
-- [ ] Asset: Bite impact effect sheet
-  - Status: Needed
+- [x] Asset: Bite impact effect sheet
+  - Status: Integrated
   - Priority: P1
   - Milestone: M4
   - Filename: `fx_bite_impact.png`

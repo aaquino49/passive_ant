@@ -829,7 +829,7 @@
   .node-tile.mossy_log      { background-image: url('assets/node_mossy_log_states.png'); }
   .node-tile.cracked_paver  { background-image: url('assets/node_cracked_paver_states.png'); }
   .node-tile.compost_edge   { background-image: url('assets/node_compost_edge_states.png'); }
-  .node-tile.fallen_plum    { background-image: url('assets/node_compost_edge_states.png'); } /* fallback */
+  .node-tile.fallen_plum    { background-image: url('assets/node_fallen_plum_states.png'); }
 
   /* State positions (0-7): locked, scoutable, scouting, revealed, siege, claimed, threatened, breached */
   .node-tile.state-hidden      { background-position-x: 0; }
@@ -891,6 +891,19 @@
   @keyframes acidAnim {
     0% { background-position: 0 0; opacity: 0.9; }
     100% { background-position: -384px 0; opacity: 0; }
+  }
+
+  .fx-bite {
+    background-image: url('assets/fx_bite_impact.png');
+    background-size: 288px 96px;
+    image-rendering: pixelated;
+    width: 72px; height: 72px;
+    position: absolute; pointer-events: none;
+    animation: biteAnim 0.35s steps(3) forwards;
+  }
+  @keyframes biteAnim {
+    0% { background-position: 0 0; opacity: 1; }
+    100% { background-position: -216px 0; opacity: 0; }
   }
 
   /* ── Trail Connection Lines ── */
@@ -1676,7 +1689,7 @@ function renderMapViewport() {
     const idx = stateIdx[st.state] || 0;
     const nd = getMapNodeDef(ndId);
     // Use the correct node sheet for each node type
-    const sheetMap = { sunny_rock: 'node_sunny_rock', mossy_log: 'node_mossy_log', cracked_paver: 'node_cracked_paver', compost_edge: 'node_compost_edge', fallen_plum: 'node_compost_edge' };
+    const sheetMap = { sunny_rock: 'node_sunny_rock', mossy_log: 'node_mossy_log', cracked_paver: 'node_cracked_paver', compost_edge: 'node_compost_edge', fallen_plum: 'node_fallen_plum' };
     const sheet = sheetMap[ndId] || 'node_sunny_rock';
     img.setAttribute('href', `assets/${sheet}_states.png`);
     // Clip to show only the relevant state frame
@@ -2029,6 +2042,13 @@ function tickCombat(dt) {
       ichor.style.top = (30 + Math.random() * 30) + '%';
       stage.appendChild(ichor);
       setTimeout(() => ichor.remove(), 550);
+
+      const bite = document.createElement('div');
+      bite.className = 'fx-bite';
+      bite.style.left = (35 + Math.random() * 35) + '%';
+      bite.style.top = (25 + Math.random() * 30) + '%';
+      stage.appendChild(bite);
+      setTimeout(() => bite.remove(), 400);
     } else {
       const acid = document.createElement('div');
       acid.className = 'fx-acid';
