@@ -1,0 +1,3046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Passive Ant — M5 Prestige</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #14140a;
+    --surface: #1e1e12;
+    --surface2: #29291a;
+    --text: #e8e0cc;
+    --text-dim: #9e9878;
+    --amber: #d4a040;
+    --amber-bright: #f0c050;
+    --green: #7ab648;
+    --green-bright: #90cc50;
+    --red: #c8544a;
+    --red-bright: #e86050;
+    --blue: #6898c8;
+    --border: #3a3a28;
+    --danger: #d44a3a;
+    --warn: #d4a040;
+    --radius: 8px;
+    --tap: 44px;
+  }
+
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ═══ APP SHELL: 40/60 split ═══ */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  /* ── Nest Viewport (40%) ── */
+  #viewport {
+    flex: 0 0 40%;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 2px solid var(--border);
+    background: #1a1a0f;
+  }
+  #viewport-bg {
+    position: absolute;
+    inset: 0;
+    background: url('assets/bg_nest_cross_section.png') center/cover no-repeat;
+    opacity: 0.85;
+  }
+  #viewport-ants {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .vp-ant {
+    position: absolute;
+    width: 28px; height: 28px;
+    background-size: 448px 448px;
+    image-rendering: pixelated;
+    animation: antWander var(--dur) var(--delay) infinite alternate ease-in-out;
+    opacity: 0.9;
+  }
+  .vp-ant.forager  { background-image: url('assets/ant_worker_forager_sheet.png'); background-position: 0 0; }
+  .vp-ant.excavator{ background-image: url('assets/ant_excavator_sheet.png'); background-position: 0 0; }
+  .vp-ant.soldier  { background-image: url('assets/ant_soldier_sheet.png'); background-position: 0 0; }
+
+  @keyframes antWander {
+    0%   { transform: translate(0, 0) scaleX(1); }
+    25%  { transform: translate(var(--dx1), var(--dy1)) scaleX(1); }
+    50%  { transform: translate(var(--dx2), var(--dy2)) scaleX(-1); }
+    75%  { transform: translate(var(--dx3), var(--dy3)) scaleX(-1); }
+    100% { transform: translate(0, 0) scaleX(1); }
+  }
+  .vp-ant.reduced { animation: none; }
+
+  /* ── Control Deck (60%) ── */
+  #deck {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #deck-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 8px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* ── Resource Header ── */
+  #res-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 4px;
+    padding: 4px 8px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .rh-cell {
+    text-align: center;
+    min-width: 0;
+  }
+  .rh-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+  }
+  .rh-value {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
+    line-height: 1.1;
+  }
+  .rh-rate {
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
+  }
+  .rh-rate.pos { color: var(--green-bright); }
+  .rh-rate.neg { color: var(--red-bright); }
+
+  /* ── Status Strip ── */
+  #status-strip {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    margin: 0 8px;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 2px solid var(--border);
+    transition: border-color 0.3s, background 0.3s;
+  }
+  #status-strip.stable   { border-color: #3a5a20; background: #1a2610; }
+  #status-strip.hungry   { border-color: #8a6a20; background: #262010; }
+  #status-strip.starving { border-color: #8a3020; background: #261010; animation: pulse-border 1s infinite; }
+  #status-strip.capped   { border-color: #6a5a20; background: #1e1a10; }
+  #status-strip.growing  { border-color: #3a6a30; background: #1a2410; }
+  @keyframes pulse-border { 0%,100%{ border-color:#8a3020; } 50%{ border-color:#d44a3a; } }
+
+  .ss-icon {
+    font-size: 18px; width: 24px; text-align: center; flex-shrink: 0;
+  }
+  .ss-text { flex: 1; min-width: 0; }
+  .ss-hint {
+    font-size: 10px; color: var(--amber);
+    flex-shrink: 0; text-align: right;
+  }
+
+  /* ── Deck Sections ── */
+  .deck-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px;
+  }
+  .deck-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  /* ── Allocation Rows ── */
+  .alloc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+  }
+  .alloc-row:last-child { margin-bottom: 0; }
+  .alloc-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--radius);
+    flex-shrink: 0;
+    background-size: 640px 640px;
+    image-rendering: pixelated;
+    position: relative;
+  }
+  .alloc-icon.forager  { background-image: url('assets/ant_worker_forager_sheet.png'); background-position: 0 0; }
+  .alloc-icon.excavator{ background-image: url('assets/ant_excavator_sheet.png'); background-position: 0 0; }
+  .alloc-icon.soldier  { background-image: url('assets/ant_soldier_sheet.png'); background-position: 0 0; }
+
+  .alloc-body { flex: 1; min-width: 0; }
+  .alloc-name { font-size: 13px; font-weight: 600; }
+  .alloc-preview { font-size: 10px; color: var(--text-dim); }
+  .alloc-preview .amt { font-weight: 600; }
+  .alloc-preview .pos { color: var(--green-bright); }
+  .alloc-preview .neg { color: var(--red-bright); }
+
+  .alloc-count {
+    font-size: 22px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
+    width: 36px; text-align: center;
+    flex-shrink: 0;
+  }
+  .btn-stepper {
+    width: var(--tap); height: var(--tap);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; line-height: 1;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .btn-stepper:active { background: var(--amber); color: #111; border-color: var(--amber); }
+  .btn-stepper:disabled { opacity: 0.2; cursor: default; }
+
+  /* ── Upgrades ── */
+  .upgrade-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .upgrade-card:last-child { margin-bottom: 0; }
+  .upgrade-card.affordable { border-color: var(--amber); }
+  .upg-info { flex: 1; min-width: 0; }
+  .upg-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .upg-name { font-size: 12px; font-weight: 600; }
+  .upg-level {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text-dim);
+  }
+  .upg-desc { font-size: 10px; color: var(--text-dim); }
+  .upg-benefit { font-size: 10px; color: var(--green); }
+  .btn-upgrade {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    min-height: var(--tap);
+    white-space: nowrap;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+  }
+  .btn-upgrade.ready {
+    border-color: var(--amber);
+    color: var(--amber);
+    animation: glow-pulse 2s infinite;
+  }
+  @keyframes glow-pulse { 0%,100%{ border-color: var(--amber); } 50%{ border-color: var(--amber-bright); } }
+  .btn-upgrade:active.ready { background: var(--amber); color: #111; }
+  .btn-upgrade:disabled { opacity: 0.3; cursor: default; animation: none; }
+
+  /* ── Bottom Bar ── */
+  #bottom-bar {
+    flex-shrink: 0;
+    display: flex;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .bb-btn {
+    flex: 1;
+    padding: 8px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: var(--tap);
+    text-align: center;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+  }
+  .bb-btn.active { border-color: var(--amber); color: var(--amber); }
+  .bb-btn:active { background: var(--amber); color: #111; }
+
+  /* ── Settings Modal ── */
+  #settings-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  #settings-overlay.hidden { display: none; }
+  #settings-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 16px;
+    width: 100%; max-width: 420px;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .set-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .set-row:last-child { border-bottom: none; }
+  .set-label { font-size: 13px; font-weight: 600; }
+  .set-sub  { font-size: 10px; color: var(--text-dim); }
+  .set-toggle {
+    width: 48px; height: 28px;
+    border-radius: 14px;
+    border: none;
+    background: var(--border);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .set-toggle.on { background: var(--green); }
+  .set-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.2s;
+  }
+  .set-toggle.on::after { transform: translateX(20px); }
+  .btn-close {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .btn-close:active { background: var(--amber); color: #111; }
+
+  /* ── Onboarding Overlay ── */
+  #onboard-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 300;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  #onboard-overlay.hidden { display: none; }
+  #onboard-card {
+    background: var(--surface);
+    border: 2px solid var(--amber);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    width: 100%; max-width: 360px;
+    text-align: center;
+  }
+  #onboard-icon { font-size: 40px; margin-bottom: 12px; }
+  #onboard-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--amber); }
+  #onboard-body { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 16px; }
+  #onboard-steps { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
+  .onb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
+  .onb-dot.active { background: var(--amber); }
+  #onboard-btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--amber);
+    color: #111;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+  }
+  #onboard-btn:active { background: var(--amber-bright); }
+  #onboard-skip {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 11px; cursor: pointer; margin-top: 10px;
+    text-decoration: underline;
+  }
+
+  /* ── Offline Toast ── */
+  #offline-toast {
+    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--amber);
+    border-radius: var(--radius); padding: 10px 16px;
+    font-size: 12px; color: var(--amber);
+    z-index: 100; pointer-events: none; text-align: center;
+    animation: toastIn 0.4s ease, toastOut 0.4s ease 3s forwards;
+  }
+  #offline-toast.hidden { display: none; }
+  @keyframes toastIn  { from { opacity: 0; top: -20px; } to { opacity: 1; top: 10px; } }
+  @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── Tab Bar ── */
+  #tab-bar {
+    flex-shrink: 0; display: flex; gap: 0;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1; padding: 8px 0;
+    border: none; border-bottom: 2px solid transparent;
+    background: transparent; color: var(--text-dim);
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    text-align: center; transition: color 0.2s, border-color 0.2s;
+  }
+  .tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-btn:active { background: var(--surface2); }
+
+  /* ── Map Viewport ── */
+  #map-viewport {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, #4a6a2a 0%, #3a5a20 25%, #2a3a1a 70%, #1a1a0f 100%);
+    display: none;
+  }
+  #map-viewport.active { display: block; }
+  #map-svg { width: 100%; height: 100%; }
+  .node-svg-circle { cursor: pointer; transition: fill 0.2s, r 0.2s; }
+  .node-svg-circle:hover { r: 15; }
+  .node-svg-line { stroke-linecap: round; }
+  .node-svg-label {
+    font-size: 8px; fill: var(--text); text-anchor: middle;
+    pointer-events: none; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  .node-svg-dist {
+    font-size: 7px; fill: var(--text-dim); text-anchor: middle;
+    pointer-events: none; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  .map-home-label {
+    font-size: 9px; fill: var(--amber); text-anchor: middle; font-weight: 700;
+    pointer-events: none; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  /* ── Map Deck ── */
+  #map-deck { display: none; }
+  #map-deck.active { display: flex; flex-direction: column; gap: 6px; }
+  #nest-deck-content { display: flex; flex-direction: column; gap: 6px; }
+  #nest-deck-content.hidden { display: none; }
+
+  .node-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px;
+  }
+  .node-card.selected { border-color: var(--amber); }
+  .node-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .node-state-badge {
+    font-size: 8px; text-transform: uppercase; padding: 2px 6px;
+    border-radius: 4px; font-weight: 600; letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+  .badge-hidden { background: #1a1a1a; color: var(--text-dim); }
+  .badge-scoutable { background: #1a3020; color: var(--green); }
+  .badge-scouting { background: #1a2a30; color: var(--blue); }
+  .badge-revealed { background: #302a10; color: var(--amber); }
+  .badge-siege { background: #301a10; color: var(--red-bright); }
+  .badge-claimed { background: #1a3010; color: var(--green-bright); }
+  .badge-threatened { background: #301010; color: var(--red); animation: pulse-border 1s infinite; }
+  .badge-breached { background: #3a1010; color: var(--danger); animation: pulse-border 0.5s infinite; }
+  .node-name { font-size: 14px; font-weight: 700; flex: 1; }
+  .node-desc { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
+  .node-reward { font-size: 11px; color: var(--green); margin-bottom: 2px; font-weight: 600; }
+  .node-info-row { display: flex; gap: 12px; margin-bottom: 4px; }
+  .node-info-item { font-size: 10px; color: var(--text-dim); }
+  .node-info-item .val { font-weight: 600; color: var(--text); }
+
+  .timer-bar-wrap {
+    height: 6px; background: var(--surface2);
+    border-radius: 3px; margin: 6px 0; overflow: hidden;
+  }
+  .timer-bar-fill {
+    height: 100%; border-radius: 3px; transition: width 0.3s linear;
+  }
+  .timer-bar-fill.scout { background: var(--blue); }
+  .timer-bar-fill.siege { background: var(--red); }
+  .timer-bar-fill.breach { background: var(--danger); }
+
+  .node-action-row { display: flex; gap: 6px; margin-top: 4px; }
+  .btn-node-action {
+    flex: 1; padding: 10px 8px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: transparent; color: var(--text-dim);
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    min-height: var(--tap); text-align: center;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+  }
+  .btn-node-action.ready { border-color: var(--amber); color: var(--amber); }
+  .btn-node-action:active.ready { background: var(--amber); color: #111; }
+  .btn-node-action:disabled { opacity: 0.3; cursor: default; }
+  .btn-node-action.danger { border-color: var(--danger); color: var(--red-bright); }
+  .btn-node-action:active.danger { background: var(--danger); color: #fff; }
+
+  #supply-summary {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 11px;
+  }
+  #supply-summary.safe { border-color: #3a5a20; }
+  #supply-summary.strained { border-color: #8a6a20; }
+  #supply-summary.danger { border-color: #8a3020; }
+
+  #map-empty-msg {
+    text-align: center; color: var(--text-dim);
+    font-size: 12px; padding: 20px 10px;
+  }
+
+  /* ── Combat System ── */
+  #combat-overlay {
+    position: fixed; inset: 0; z-index: 250;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  #combat-overlay.active { display: flex; }
+
+  /* Combat Preview */
+  #combat-preview {
+    background: var(--surface); border: 2px solid var(--amber);
+    border-radius: var(--radius); padding: 16px;
+    width: 90%; max-width: 360px; text-align: center;
+    display: none;
+  }
+  #combat-preview.active { display: block; }
+  #cp-title { font-size: 16px; font-weight: 700; color: var(--amber); margin-bottom: 4px; }
+  #cp-enemy { font-size: 13px; color: var(--red); margin-bottom: 8px; }
+  .cp-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .cp-row .val { font-weight: 700; }
+  .cp-outcome { font-size: 14px; font-weight: 700; margin: 10px 0; }
+  .cp-outcome.clean { color: var(--green-bright); }
+  .cp-outcome.costly { color: var(--amber); }
+  .cp-outcome.risky { color: var(--red-bright); }
+  .cp-outcome.danger { color: var(--danger); }
+  .cp-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .cp-actions button { flex: 1; }
+
+  /* Battle Arena */
+  #battle-arena {
+    background: var(--surface); border: 2px solid var(--red);
+    border-radius: var(--radius);
+    width: 90%; max-width: 360px;
+    display: none; flex-direction: column;
+    overflow: hidden;
+  }
+  #battle-arena.active { display: flex; }
+  #battle-stage {
+    height: 180px; position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #1a1008 0%, #2a1810 50%, #1a1008 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #battle-enemy {
+    font-size: 48px; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+  }
+  #battle-ants-row {
+    position: absolute; bottom: 8px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 4px; font-size: 20px;
+  }
+  .battle-shake {
+    animation: battleShake 0.08s ease-in-out;
+  }
+  @keyframes battleShake {
+    0%,100% { transform: translate(0, 0); }
+    25% { transform: translate(-4px, 2px); }
+    50% { transform: translate(4px, -2px); }
+    75% { transform: translate(-2px, -1px); }
+  }
+  .battle-hit-flash {
+    animation: hitFlash 0.15s ease-out;
+  }
+  @keyframes hitFlash {
+    0% { filter: brightness(3); }
+    100% { filter: brightness(1); }
+  }
+  .battle-ichor-splash {
+    position: absolute; inset: 0;
+    animation: ichorFade 0.5s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes ichorFade {
+    0% { background: rgba(120,200,40,0.25); }
+    100% { background: transparent; }
+  }
+  #battle-event-log {
+    height: 70px; overflow-y: auto; padding: 6px 10px;
+    font-size: 10px; color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+  }
+  .blog-line { padding: 1px 0; }
+  .blog-line.player { color: var(--green); }
+  .blog-line.enemy { color: var(--red-bright); }
+  .blog-line.neutral { color: var(--amber); }
+  .blog-line.casualty { color: var(--danger); }
+
+  /* Results Panel */
+  #combat-results {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    width: 90%; max-width: 360px; text-align: center;
+    display: none;
+  }
+  #combat-results.active { display: block; }
+  #cr-banner { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  #cr-banner.victory { color: var(--green-bright); }
+  #cr-banner.costly { color: var(--amber); }
+  #cr-banner.defeat { color: var(--danger); }
+  .cr-stat {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 0; font-size: 12px; border-bottom: 1px solid var(--border);
+  }
+  .cr-stat .val { font-weight: 700; }
+  .cr-salvage { font-size: 12px; color: var(--green); margin: 6px 0; }
+  .cr-recovery { font-size: 11px; color: var(--amber); margin: 8px 0; line-height: 1.4; }
+
+  /* Combat Stance */
+  .stance-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; background: var(--surface2);
+    border-radius: var(--radius); margin-bottom: 6px;
+  }
+  .stance-label { font-size: 11px; font-weight: 600; flex: 1; }
+  .stance-btns { display: flex; gap: 4px; }
+  .btn-stance {
+    padding: 4px 8px; border: 1px solid var(--border);
+    border-radius: 4px; background: transparent; color: var(--text-dim);
+    font-size: 9px; font-weight: 600; cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+  }
+  .btn-stance.active { border-color: var(--amber); color: var(--amber); background: rgba(212,160,64,0.1); }
+  .btn-stance:active { background: var(--amber); color: #111; }
+
+  /* ── Prestige System ── */
+  #prestige-tracker {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; margin: 2px 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); font-size: 10px;
+    flex-shrink: 0;
+  }
+  #prestige-tracker.ready { border-color: var(--amber); animation: glow-pulse 2s infinite; }
+  #pt-bar-wrap {
+    flex: 1; height: 6px; background: var(--surface2);
+    border-radius: 3px; overflow: hidden; min-width: 60px;
+  }
+  #pt-bar-fill {
+    height: 100%; border-radius: 3px;
+    background: var(--amber); transition: width 0.5s;
+  }
+  #pt-label { font-weight: 600; white-space: nowrap; }
+  #btn-nuptial {
+    padding: 4px 10px; border: 1px solid var(--amber);
+    border-radius: 4px; background: transparent; color: var(--amber);
+    font-size: 10px; font-weight: 700; cursor: pointer;
+    white-space: nowrap; display: none;
+    animation: glow-pulse 2s infinite;
+  }
+  #btn-nuptial.show { display: block; }
+  #btn-nuptial:active { background: var(--amber); color: #111; }
+
+  #prestige-overlay {
+    position: fixed; inset: 0; z-index: 260;
+    background: rgba(0,0,0,0.85);
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  #prestige-overlay.active { display: flex; }
+  #prestige-panel {
+    background: var(--surface); border: 2px solid var(--amber);
+    border-radius: var(--radius); padding: 16px;
+    width: 90%; max-width: 360px; max-height: 85vh; overflow-y: auto;
+    text-align: center;
+  }
+  #prestige-panel h2 { font-size: 16px; color: var(--amber); margin-bottom: 4px; }
+  #prestige-panel h3 { font-size: 13px; color: var(--text-dim); margin-bottom: 10px; font-weight: 400; }
+  .prestige-section { margin: 10px 0; text-align: left; }
+  .prestige-section h4 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-dim); margin-bottom: 4px;
+  }
+  .prestige-reset-list {
+    font-size: 10px; color: var(--red); list-style: none; padding: 0;
+  }
+  .prestige-reset-list li { padding: 2px 0; }
+  .prestige-keep-list {
+    font-size: 10px; color: var(--green); list-style: none; padding: 0;
+  }
+  .prestige-keep-list li { padding: 2px 0; }
+
+  .mutation-grid { display: flex; flex-direction: column; gap: 6px; }
+  .mutation-card {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    cursor: pointer; text-align: left;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .mutation-card:hover { border-color: var(--amber); }
+  .mutation-card.selected { border-color: var(--amber); background: rgba(212,160,64,0.1); }
+  .mut-icon { font-size: 22px; flex-shrink: 0; width: 28px; text-align: center; }
+  .mut-info { flex: 1; min-width: 0; }
+  .mut-name { font-size: 12px; font-weight: 600; }
+  .mut-desc { font-size: 10px; color: var(--text-dim); }
+  .mut-check { color: var(--amber); font-size: 16px; display: none; }
+  .mutation-card.selected .mut-check { display: block; }
+
+  #btn-launch-flight {
+    width: 100%; padding: 12px; margin-top: 12px;
+    border: none; border-radius: var(--radius);
+    background: var(--amber); color: #111;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  #btn-launch-flight:disabled { opacity: 0.3; cursor: default; }
+  #btn-launch-flight:active:not(:disabled) { background: var(--amber-bright); }
+
+  #biome-select {
+    display: flex; gap: 6px; margin: 8px 0;
+  }
+  .biome-option {
+    flex: 1; padding: 8px; border: 1px solid var(--border);
+    border-radius: var(--radius); background: var(--surface2);
+    cursor: pointer; text-align: center; font-size: 10px;
+    transition: border-color 0.2s;
+  }
+  .biome-option.selected { border-color: var(--amber); background: rgba(212,160,64,0.1); }
+  .biome-option.locked { opacity: 0.4; cursor: default; }
+  .biome-name { font-size: 12px; font-weight: 700; }
+  .biome-desc { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Active mutations display */
+  #active-mutations {
+    font-size: 9px; color: var(--amber); padding: 2px 6px;
+    text-align: center; min-height: 16px;
+  }
+
+  /* ═══ ASSET INTEGRATION: Sprite Sheets ═══ */
+  :root {
+    --icon-size: 256;
+    --frame-size: 64;
+    --node-state-size: 128;
+  }
+  .sprite-icon {
+    background-size: calc(var(--icon-size) * 2px) calc(var(--icon-size) * 2px);
+    image-rendering: pixelated;
+    display: inline-block;
+    width: 28px; height: 28px;
+  }
+  /* icons_resources_core.png — 2x2 grid (Food, Materials | Population, Security) */
+  .sprite-icon.food  { background-image: url('assets/icons_resources_core.png'); background-position: 0 0; }
+  .sprite-icon.mats  { background-image: url('assets/icons_resources_core.png'); background-position: -28px 0; }
+  .sprite-icon.pop   { background-image: url('assets/icons_resources_core.png'); background-position: 0 -28px; }
+  .sprite-icon.sec   { background-image: url('assets/icons_resources_core.png'); background-position: -28px -28px; }
+
+  /* icons_roles.png — 3x2 grid (Forager, Excavator, Soldier / Major, Swarmer, Spitter) */
+  .sprite-role {
+    background-image: url('assets/icons_roles.png');
+    background-size: 168px 112px;
+    image-rendering: pixelated;
+    width: 40px; height: 40px;
+  }
+  .sprite-role.forager   { background-position: 0 0; }
+  .sprite-role.excavator { background-position: -40px 0; }
+  .sprite-role.soldier   { background-position: -80px 0; }
+  .sprite-role.major     { background-position: 0 -40px; }
+  .sprite-role.swarmer   { background-position: -40px -40px; }
+  .sprite-role.spitter   { background-position: -80px -40px; }
+
+  /* ── Panel Textures ── */
+  .deck-section,
+  #settings-panel, #combat-preview, #combat-results, #battle-arena, #prestige-panel {
+    background-image: url('assets/ui_panel_textures.png');
+    background-size: cover;
+    background-blend-mode: overlay;
+  }
+
+  /* ── Map Node Tile States ── */
+  .node-tile {
+    background-size: calc(var(--node-state-size) * 8px) var(--node-state-size) * 1px;
+    image-rendering: pixelated;
+    width: 44px; height: 44px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  /* Use specific node sheet based on node id */
+  .node-tile.sunny_rock     { background-image: url('assets/node_sunny_rock_states.png'); }
+  .node-tile.mossy_log      { background-image: url('assets/node_mossy_log_states.png'); }
+  .node-tile.cracked_paver  { background-image: url('assets/node_cracked_paver_states.png'); }
+  .node-tile.compost_edge   { background-image: url('assets/node_compost_edge_states.png'); }
+  .node-tile.fallen_plum    { background-image: url('assets/node_compost_edge_states.png'); } /* fallback */
+
+  /* State positions (0-7): locked, scoutable, scouting, revealed, siege, claimed, threatened, breached */
+  .node-tile.state-hidden      { background-position-x: 0; }
+  .node-tile.state-scoutable   { background-position-x: calc(var(--node-state-size) * -1px); }
+  .node-tile.state-scouting    { background-position-x: calc(var(--node-state-size) * -2px); }
+  .node-tile.state-revealed    { background-position-x: calc(var(--node-state-size) * -3px); }
+  .node-tile.state-under_siege { background-position-x: calc(var(--node-state-size) * -4px); }
+  .node-tile.state-claimed     { background-position-x: calc(var(--node-state-size) * -5px); }
+  .node-tile.state-threatened  { background-position-x: calc(var(--node-state-size) * -6px); }
+  .node-tile.state-breached    { background-position-x: calc(var(--node-state-size) * -7px); }
+
+  /* ── Enemy Sprite in Combat ── */
+  #battle-enemy-sprite {
+    width: 72px; height: 72px;
+    background-image: url('assets/enemy_armored_beetle_sheet.png');
+    background-size: 576px 96px;
+    image-rendering: pixelated;
+    background-position: 0 0;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+  }
+
+  /* ── Combat Effect Overlays ── */
+  .fx-shell-crack {
+    background-image: url('assets/fx_shell_crack.png');
+    background-size: 384px 128px;
+    image-rendering: pixelated;
+    width: 96px; height: 96px;
+    position: absolute; pointer-events: none;
+    animation: crackAnim 0.4s steps(3) forwards;
+  }
+  @keyframes crackAnim {
+    0% { background-position: 0 0; opacity: 1; }
+    100% { background-position: -288px 0; opacity: 0; }
+  }
+
+  .fx-ichor {
+    background-image: url('assets/fx_ichor_splash.png');
+    background-size: 512px 128px;
+    image-rendering: pixelated;
+    width: 96px; height: 96px;
+    position: absolute; pointer-events: none;
+    animation: ichorAnim 0.5s steps(4) forwards;
+  }
+  @keyframes ichorAnim {
+    0% { background-position: 0 0; opacity: 0.9; }
+    100% { background-position: -384px 0; opacity: 0; }
+  }
+
+  .fx-acid {
+    background-image: url('assets/fx_acid_line.png');
+    background-size: 512px 128px;
+    image-rendering: pixelated;
+    width: 96px; height: 64px;
+    position: absolute; pointer-events: none;
+    animation: acidAnim 0.5s steps(4) forwards;
+  }
+  @keyframes acidAnim {
+    0% { background-position: 0 0; opacity: 0.9; }
+    100% { background-position: -384px 0; opacity: 0; }
+  }
+
+  /* ── Trail Connection Lines ── */
+  .trail-line {
+    background-image: url('assets/fx_trail_states.png');
+    background-size: 896px 128px;
+    image-rendering: pixelated;
+    height: 4px;
+  }
+  .trail-line.normal    { background-position-y: 0; }
+  .trail-line.active    { background-position-y: -16px; }
+  .trail-line.scouting  { background-position-y: -32px; }
+  .trail-line.siege     { background-position-y: -48px; }
+  .trail-line.threatened{ background-position-y: -64px; }
+  .trail-line.breached  { background-position-y: -80px; }
+  .trail-line.repaired  { background-position-y: -96px; }
+
+  /* ── Resource Sparkle ── */
+  .resource-sparkle {
+    animation: sparklePop 0.6s ease-out;
+    position: absolute;
+    pointer-events: none;
+  }
+  @keyframes sparklePop {
+    0%   { transform: scale(0.3); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  /* ── Status Warning Pulse ── */
+  .warning-pulse {
+    animation: warningGlow 1.5s ease-in-out infinite;
+  }
+  @keyframes warningGlow {
+    0%,100% { box-shadow: 0 0 4px rgba(212,64,58,0.3); }
+    50%     { box-shadow: 0 0 12px rgba(212,64,58,0.6); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 40% Viewport -->
+  <div id="viewport">
+    <div id="viewport-bg"></div>
+    <div id="viewport-chambers" style="position:absolute;inset:0;background:url('assets/tiles_nest_chambers.png') center/cover;image-rendering:pixelated;opacity:0.25;mix-blend-mode:overlay;pointer-events:none;"></div>
+    <div id="viewport-ants"></div>
+    <div id="map-viewport">
+      <svg id="map-svg"></svg>
+    </div>
+  </div>
+
+  <!-- 60% Control Deck -->
+  <div id="deck">
+    <div id="res-header">
+      <div class="rh-cell">
+        <div class="rh-label"><span class="sprite-icon food" style="vertical-align:middle;margin-right:2px;"></span> Food</div>
+        <div class="rh-value" id="rh-food">0</div>
+        <div class="rh-rate" id="rh-food-rate">0/s</div>
+      </div>
+      <div class="rh-cell">
+        <div class="rh-label">Mats</div>
+        <div class="rh-value" id="rh-mats">0</div>
+        <div class="rh-rate" id="rh-mats-rate">0/s</div>
+      </div>
+      <div class="rh-cell">
+        <div class="rh-label">Sec</div>
+        <div class="rh-value" id="rh-sec">0</div>
+        <div class="rh-rate" id="rh-sec-rate">0/s</div>
+      </div>
+      <div class="rh-cell">
+        <div class="rh-label">Pop</div>
+        <div class="rh-value" id="rh-pop">0</div>
+        <div class="rh-rate" id="rh-pop-detail">0 idle</div>
+      </div>
+    </div>
+
+    <div id="tab-bar">
+      <button class="tab-btn active" data-tab="nest">Nest</button>
+      <button class="tab-btn" data-tab="map">Map</button>
+    </div>
+
+    <div id="prestige-tracker">
+      <span id="pt-label">Nuptial Flight</span>
+      <div id="pt-bar-wrap"><div id="pt-bar-fill" style="width:0%"></div></div>
+      <button id="btn-nuptial">Launch</button>
+    </div>
+    <div id="active-mutations"></div>
+
+    <div id="deck-scroll">
+      <div id="nest-deck-content">
+      <div id="status-strip">
+        <span class="ss-icon" id="ss-icon">●</span>
+        <span class="ss-text" id="ss-text">Initializing...</span>
+        <span class="ss-hint" id="ss-hint"></span>
+      </div>
+
+      <div class="deck-section">
+        <div class="deck-title">Role Allocation</div>
+        <div id="alloc-container"></div>
+      </div>
+
+      <div class="deck-section" id="stance-section">
+        <div class="deck-title">Combat Stance</div>
+        <div class="stance-row">
+          <span class="stance-label">Soldier formation determines combat unit mix</span>
+        </div>
+        <div id="stance-buttons" class="stance-btns"></div>
+        <div style="font-size:9px;color:var(--text-dim);margin-top:4px;" id="stance-preview"></div>
+      </div>
+
+      <div class="deck-section">
+        <div class="deck-title">Nest Upgrades</div>
+        <div id="upgrade-container"></div>
+  </div>
+</div>
+
+<!-- Prestige Overlay -->
+<div id="prestige-overlay">
+  <div id="prestige-panel"></div>
+</div>
+      <div id="map-deck">
+        <div id="supply-summary">
+          <span>🚚</span>
+          <span id="supply-text">Supply Lines: 0</span>
+          <span id="supply-sec-text" style="margin-left:auto;"></span>
+        </div>
+        <div id="map-node-detail"></div>
+      </div>
+    </div>
+
+    <div id="bottom-bar">
+      <button class="bb-btn" data-speed="1">1×</button>
+      <button class="bb-btn active" data-speed="2">2×</button>
+      <button class="bb-btn" data-speed="5">5×</button>
+      <button class="bb-btn" data-speed="10">10×</button>
+      <button class="bb-btn" id="btn-settings">⚙</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-overlay" class="hidden">
+  <div id="settings-panel">
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px;">Settings</div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">Sound</div>
+        <div class="set-sub">Colony ambience (browser-gated)</div>
+      </div>
+      <button class="set-toggle" id="set-audio" aria-label="Toggle audio"></button>
+    </div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">Haptics</div>
+        <div class="set-sub">Vibration on combat events</div>
+      </div>
+      <button class="set-toggle" id="set-haptics" aria-label="Toggle haptics"></button>
+    </div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">Reduced Motion</div>
+        <div class="set-sub">Minimize animations & effects</div>
+      </div>
+      <button class="set-toggle" id="set-reduced-motion" aria-label="Toggle reduced motion"></button>
+    </div>
+    <button class="btn-close" id="btn-reset-from-settings" style="color:var(--red);border-color:var(--red);">Reset All Progress</button>
+    <button class="btn-close" id="btn-close-settings">Close</button>
+  </div>
+</div>
+
+<!-- Onboarding Overlay -->
+<div id="onboard-overlay" class="hidden">
+  <div id="onboard-card">
+    <div id="onboard-icon">🐜</div>
+    <div id="onboard-title"></div>
+    <div id="onboard-body"></div>
+    <div id="onboard-steps"></div>
+    <button id="onboard-btn">Next</button>
+    <button id="onboard-skip">Skip tutorial</button>
+  </div>
+</div>
+
+<!-- Offline Toast -->
+<div id="offline-toast" class="hidden"></div>
+
+<!-- Combat Overlay -->
+<div id="combat-overlay">
+  <div id="combat-preview">
+    <div id="cp-title">⚔️ Battle Preview</div>
+    <div id="cp-enemy"></div>
+    <div id="cp-details"></div>
+    <div class="cp-outcome" id="cp-outcome"></div>
+    <div class="cp-actions">
+      <button class="btn-close" id="btn-cancel-combat">Retreat</button>
+      <button class="btn-close" id="btn-confirm-combat" style="background:var(--red);color:#fff;border-color:var(--red);">Engage</button>
+    </div>
+  </div>
+  <div id="battle-arena">
+    <div id="battle-stage">
+      <div id="battle-enemy"></div>
+      <div id="battle-enemy-sprite"></div>
+      <div id="battle-ants-row"></div>
+    </div>
+    <div id="battle-event-log"></div>
+  </div>
+  <div id="combat-results">
+    <div id="cr-banner"></div>
+    <div id="cr-stats"></div>
+    <div id="cr-salvage" class="cr-salvage"></div>
+    <div id="cr-recovery" class="cr-recovery"></div>
+    <button class="btn-close" id="btn-close-results" style="margin-top:10px;">Continue</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG — All tuning values live here
+// ═══════════════════════════════════════════════════════════
+const CONFIG = {
+  tickMs: 100,
+  maxOfflineSeconds: 28800,
+
+  basePopulation: 10,
+  baseLarvae: 5,
+
+  foodPerForagerPerSec: 0.30,
+  matsPerExcavatorPerSec: 0.15,
+  secPerSoldierPerSec: 0.08,
+
+  foodUpkeepPerAntPerSec: 0.05,
+
+  larvaeFromFoodPerSec: 0.003,
+  larvaeMatureFractionPerSec: 0.002,
+
+  baseFoodCap: 80,
+  baseMatsCap: 40,
+  securityMax: 200,
+
+  starvationThreshold: 0.10,
+  hungryThreshold: 0.20,
+
+  upgradeDefs: {
+    foodStorage: {
+      name: 'Food Storage',
+      desc: 'Expand the granary. +40 max food per level.',
+      levels: 5,
+      baseCost: 12,
+      costMult: 2.2,
+      effect: { capBonus: 40 }
+    },
+    materialStorage: {
+      name: 'Material Storage',
+      desc: 'Reinforce the stockpile. +25 max materials per level.',
+      levels: 5,
+      baseCost: 10,
+      costMult: 2.2,
+      effect: { capBonus: 25 }
+    },
+    nursery: {
+      name: 'Nursery Chamber',
+      desc: 'Deepen the brood tunnels. +30% growth speed per level.',
+      levels: 5,
+      baseCost: 18,
+      costMult: 2.5,
+      effect: { growthMult: 0.30 }
+    },
+    guardChamber: {
+      name: 'Guard Chamber',
+      desc: 'Fortify the entrance. +25% security per soldier per level.',
+      levels: 5,
+      baseCost: 14,
+      costMult: 2.3,
+      effect: { securityMult: 0.25 }
+    }
+  }
+};
+
+const MAP_CONFIG = {
+  // ═══ Map / Trail System ═══
+  mapNodes: [
+    { id: 'sunny_rock', name: 'Sunny Rock', desc: 'A warm basking stone near the garden path.',
+      distance: 1, connections: [], scoutSec: 60, siegeSec: 120,
+      reward: { foodMult: 0.10 }, threat: 'Beetle' },
+    { id: 'mossy_log', name: 'Mossy Log', desc: 'Damp, decaying wood rich with fungus and grubs.',
+      distance: 2, connections: ['sunny_rock'], scoutSec: 80, siegeSec: 150,
+      reward: { growthMult: 0.15 }, threat: 'Predator' },
+    { id: 'cracked_paver', name: 'Cracked Paver', desc: 'A sunken stone slab hiding deep burrows beneath.',
+      distance: 3, connections: ['mossy_log'], scoutSec: 110, siegeSec: 190,
+      reward: { matsMult: 0.20 }, threat: 'Armored Beetle' },
+    { id: 'compost_edge', name: 'Compost Edge', desc: 'Rich, warm rot at the edge of the garden heap.',
+      distance: 2, connections: ['sunny_rock'], scoutSec: 70, siegeSec: 135,
+      reward: { foodCapBonus: 25 }, threat: 'Scavenger' },
+    { id: 'fallen_plum', name: 'Fallen Plum', desc: 'A sweet, fermenting fruit guarded by wasps.',
+      distance: 3, connections: ['compost_edge'], scoutSec: 100, siegeSec: 175,
+      reward: { growthMult: 0.15, foodMult: 0.05 }, threat: 'Flying Threat' }
+  ],
+  supplyLineSecurityPerDist: 6,
+  breachGraceSeconds: 90,
+  nodeRepairCost: 12,
+
+  mapNodePositions: {
+    sunny_rock:     { x: 50, y: 18 },
+    mossy_log:      { x: 22, y: 48 },
+    compost_edge:   { x: 78, y: 48 },
+    cracked_paver:  { x: 22, y: 78 },
+    fallen_plum:    { x: 78, y: 78 }
+  },
+  mapConnections: [
+    { from: 'home', to: 'sunny_rock' },
+    { from: 'sunny_rock', to: 'mossy_log' },
+    { from: 'sunny_rock', to: 'compost_edge' },
+    { from: 'mossy_log', to: 'cracked_paver' },
+    { from: 'compost_edge', to: 'fallen_plum' }
+  ]
+};
+
+const COMBAT_CONFIG = {
+  combatDuration: 8,
+  salvageMult: 0.25,
+  majorBasePower: 3.5,
+  swarmerBasePower: 1.8,
+  spitterBasePower: 2.5,
+  workerPower: 0.3,
+
+  enemyTypes: {
+    beetle:         { name: 'Stag Beetle', icon: '🪲', power: 10, traits: ['armored'], weakTo: ['major'] },
+    predator:       { name: 'Wolf Spider', icon: '🕷️', power: 9, traits: ['fast'], weakTo: ['swarmer'] },
+    armored_beetle: { name: 'Ironclad Beetle', icon: '🪳', power: 16, traits: ['armored', 'heavy'], weakTo: ['major', 'swarmer'] },
+    scavenger:      { name: 'Earwig Swarm', icon: '🦗', power: 7, traits: ['soft'], weakTo: ['swarmer', 'spitter'] },
+    flying_threat:  { name: 'Hornet Nest', icon: '🐝', power: 13, traits: ['flying', 'fast'], weakTo: ['spitter'] }
+  },
+
+  matchups: {
+    major_vs_armored: 2.0,
+    major_vs_fast: 0.5,
+    swarmer_vs_heavy: 2.0,
+    swarmer_vs_flying: 0.5,
+    spitter_vs_flying: 2.0,
+    spitter_vs_fast: 0.5
+  },
+
+  outcomeThresholds: {
+    clean: 1.6,
+    costly: 1.0,
+    pyrrhic: 0.55
+  },
+
+  stances: {
+    balanced:  { major: 0.40, swarmer: 0.30, spitter: 0.30, label: 'Balanced' },
+    defensive: { major: 0.60, swarmer: 0.25, spitter: 0.15, label: 'Defensive' },
+    aggressive:{ major: 0.20, swarmer: 0.55, spitter: 0.25, label: 'Aggressive' },
+    ranged:    { major: 0.15, swarmer: 0.15, spitter: 0.70, label: 'Ranged' }
+  }
+};
+
+function getEnemyTypeKey(threatName) {
+  const map = { 'Beetle': 'beetle', 'Predator': 'predator', 'Armored Beetle': 'armored_beetle',
+                'Scavenger': 'scavenger', 'Flying Threat': 'flying_threat' };
+  return map[threatName] || 'scavenger';
+}
+
+const PRESTIGE_CONFIG = {
+  requiredNodes: 3,
+  requiredPop: 30,
+
+  mutations: [
+    { id: 'stronger_mandibles', name: 'Stronger Mandibles', icon: '🦷', desc: '+30% Major soldier power in combat', effect: { majorPower: 0.30 } },
+    { id: 'efficient_digestion', name: 'Efficient Digestion', icon: '🍽️', desc: '-15% Food upkeep per ant', effect: { foodUpkeep: -0.15 } },
+    { id: 'deep_memory', name: 'Deep-Memory Trails', icon: '🧠', desc: '-30% scouting duration on all nodes', effect: { scoutSpeed: 0.30 } },
+    { id: 'resin_shells', name: 'Resin Shells', icon: '🛡️', desc: '+50% breach grace period before supply lines break', effect: { breachResistance: 0.50 } },
+    { id: 'acid_glands', name: 'Acid Glands', icon: '🧪', desc: '+30% Spitter power in combat', effect: { spitterPower: 0.30 } }
+  ],
+
+  biomes: {
+    garden: {
+      name: 'Garden', desc: 'A lush backyard — familiar, forgiving territory.',
+      enemyPowerMult: 1.0, timerMult: 1.0, rewardMult: 1.0
+    },
+    patio: {
+      name: 'Patio', desc: 'Harsh sun-baked stone. Tougher foes, richer spoils.',
+      enemyPowerMult: 1.4, timerMult: 1.25, rewardMult: 1.5
+    }
+  },
+  defaultBiome: 'garden',
+  prestigeBiome: 'patio'
+};
+
+// ═══════════════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════════════
+function createInitialState() {
+  return {
+    resources: { food: 40, materials: 10 },
+    caps: { food: CONFIG.baseFoodCap, materials: CONFIG.baseMatsCap },
+    security: 0,
+    population: { adults: CONFIG.basePopulation, larvae: CONFIG.baseLarvae },
+    assigned: { foragers: 4, excavators: 2, soldiers: 0 },
+    upgrades: { foodStorage: 0, materialStorage: 0, nursery: 0, guardChamber: 0 },
+    session: { lastTickTs: Date.now(), offlineApplied: false },
+    status: 'stable',
+    prevStatus: 'stable',
+    prevFoodRate: 0,
+    map: {
+      nodes: {},
+      selectedNode: null
+    },
+    combatStance: 'balanced',
+    combat: null,
+    prestige: {
+      generation: 0,
+      mutations: [],
+      unlockedBiomes: ['garden'],
+      currentBiome: 'garden'
+    }
+  };
+}
+function initMapNodes(s) {
+  MAP_CONFIG.mapNodes.forEach(nd => {
+    const isConnected = nd.connections.length === 0;
+    s.map.nodes[nd.id] = {
+      state: isConnected ? 'scoutable' : 'hidden',
+      scoutTimer: 0,
+      siegeTimer: 0,
+      breachTimer: 0,
+      breachWarned: false
+    };
+  });
+}
+
+let G = createInitialState();
+let speed = 2;
+let activeTab = 'nest';
+let lastFrameTs = 0;
+
+// Settings
+let settings = {
+  audio: false,
+  haptics: true,
+  reducedMotion: false
+};
+
+// ═══════════════════════════════════════════════════════════
+//  DERIVED VALUES
+// ═══════════════════════════════════════════════════════════
+function totalAssigned(s) {
+  return s.assigned.foragers + s.assigned.excavators + s.assigned.soldiers;
+}
+function unassigned(s) {
+  return Math.max(0, s.population.adults - totalAssigned(s));
+}
+function totalPop(s) {
+  return s.population.adults + s.population.larvae;
+}
+function getUpgradeLevel(s, id) { return s.upgrades[id] || 0; }
+function effectiveCap(s, resourceKey, upgradeId) {
+  const def = CONFIG.upgradeDefs[upgradeId];
+  const bonus = def ? def.effect.capBonus * getUpgradeLevel(s, upgradeId) : 0;
+  const nm = getNodeRewardMultipliers(s);
+  const nodeBonus = resourceKey === 'food' ? nm.foodCapBonus : (resourceKey === 'materials' ? nm.matsCapBonus : 0);
+  if (resourceKey === 'food') return CONFIG.baseFoodCap + bonus + nodeBonus;
+  if (resourceKey === 'materials') return CONFIG.baseMatsCap + bonus + nodeBonus;
+  return 0;
+}
+function growthMultiplier(s) {
+  return 1 + CONFIG.upgradeDefs.nursery.effect.growthMult * getUpgradeLevel(s, 'nursery');
+}
+function securityMultiplier(s) {
+  return 1 + CONFIG.upgradeDefs.guardChamber.effect.securityMult * getUpgradeLevel(s, 'guardChamber');
+}
+function upgradeCost(id, level) {
+  const def = CONFIG.upgradeDefs[id];
+  return Math.floor(def.baseCost * Math.pow(def.costMult, level));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SIMULATION TICK
+// ═══════════════════════════════════════════════════════════
+function tick(s, deltaSec, skipBreaches) {
+  const dt = deltaSec;
+  s.caps.food = effectiveCap(s, 'food', 'foodStorage');
+  s.caps.materials = effectiveCap(s, 'materials', 'materialStorage');
+
+  const adults = s.population.adults;
+  const a = s.assigned;
+  const nm = getNodeRewardMultipliers(s);
+
+  const foodProd = a.foragers * CONFIG.foodPerForagerPerSec * nm.foodMult * dt;
+  const matsProd = a.excavators * CONFIG.matsPerExcavatorPerSec * nm.matsMult * dt;
+  const secProd = a.soldiers * CONFIG.secPerSoldierPerSec * securityMultiplier(s) * dt;
+  const pmod = getPrestigeModifiers();
+  const effUpkeep = CONFIG.foodUpkeepPerAntPerSec * (1 + (pmod.foodUpkeep || 0));
+  const foodEaten = adults * effUpkeep * dt;
+
+  let netFood = foodProd - foodEaten;
+  if (netFood > 0 && s.resources.food >= s.caps.food) netFood = 0;
+
+  s.resources.food += netFood;
+  s.resources.materials += matsProd;
+  s.security += secProd;
+
+  s.resources.food = Math.max(0, Math.min(s.caps.food, s.resources.food));
+  s.resources.materials = Math.max(0, Math.min(s.caps.materials, s.resources.materials));
+  s.security = Math.max(0, Math.min(CONFIG.securityMax, s.security));
+
+  const foodRatio = s.caps.food > 0 ? s.resources.food / s.caps.food : 0;
+  const isStarving = foodRatio <= CONFIG.starvationThreshold;
+  const productionPenalty = isStarving ? 0.5 : (foodRatio <= CONFIG.hungryThreshold ? 0.8 : 1.0);
+
+  if (foodRatio > CONFIG.starvationThreshold) {
+    const excess = Math.max(0, foodRatio - CONFIG.starvationThreshold);
+    const larvaeGen = adults * CONFIG.larvaeFromFoodPerSec * excess * growthMultiplier(s) * nm.growthMult * productionPenalty * dt;
+    s.population.larvae += larvaeGen;
+  }
+
+  const mature = s.population.larvae * CONFIG.larvaeMatureFractionPerSec * growthMultiplier(s) * nm.growthMult * dt;
+  s.population.larvae = Math.max(0, s.population.larvae - mature);
+  s.population.adults += mature;
+
+  enforceAssignmentLimits(s);
+
+  tickMapNodes(s, dt, skipBreaches);
+
+  const foodCapped = s.resources.food >= s.caps.food * 0.99 && netFood > 0;
+  const matsCapped = s.resources.materials >= s.caps.materials * 0.99;
+  if (foodRatio <= CONFIG.starvationThreshold) s.status = 'starving';
+  else if (foodRatio <= CONFIG.hungryThreshold || (netFood < 0 && foodRatio < 0.4)) s.status = 'hungry';
+  else if (foodCapped || matsCapped) s.status = 'capped';
+  else if (s.population.larvae > 1 && mature > 0.001) s.status = 'growing';
+  else s.status = 'stable';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NET RATES (per second, for display)
+// ═══════════════════════════════════════════════════════════
+function getNetRates(s) {
+  const adults = s.population.adults;
+  const a = s.assigned;
+  const foodCap = s.caps.food;
+  const matsCap = s.caps.materials;
+  const foodRatio = foodCap > 0 ? s.resources.food / foodCap : 0;
+  const nm = getNodeRewardMultipliers(s);
+  const pmod = getPrestigeModifiers();
+  const effUpkeep = CONFIG.foodUpkeepPerAntPerSec * (1 + (pmod.foodUpkeep || 0));
+
+  let netFood = a.foragers * CONFIG.foodPerForagerPerSec * nm.foodMult - adults * effUpkeep;
+  if (netFood > 0 && s.resources.food >= foodCap) netFood = 0;
+  let matsRate = a.excavators * CONFIG.matsPerExcavatorPerSec * nm.matsMult;
+  if (matsRate > 0 && s.resources.materials >= matsCap) matsRate = 0;
+  const secRate = a.soldiers * CONFIG.secPerSoldierPerSec * securityMultiplier(s);
+
+  const excessForGrowth = foodRatio > CONFIG.starvationThreshold ? Math.max(0, foodRatio - CONFIG.starvationThreshold) : 0;
+  const productionPenalty = foodRatio <= CONFIG.starvationThreshold ? 0.5 : (foodRatio <= CONFIG.hungryThreshold ? 0.8 : 1.0);
+  const larvaeRate = adults * CONFIG.larvaeFromFoodPerSec * excessForGrowth * growthMultiplier(s) * nm.growthMult * productionPenalty;
+  const matureRate = s.population.larvae * CONFIG.larvaeMatureFractionPerSec * growthMultiplier(s) * nm.growthMult;
+
+  return { netFood, matsRate, secRate, larvaeRate, matureRate, foodRatio };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MAP / TRAIL SYSTEM
+// ═══════════════════════════════════════════════════════════
+function getMapNodeDef(id) { return MAP_CONFIG.mapNodes.find(n => n.id === id); }
+function getNodeState(s, id) { return s.map.nodes[id]; }
+
+function getClaimedNodes(s) {
+  return MAP_CONFIG.mapNodes.filter(nd => s.map.nodes[nd.id].state === 'claimed').map(nd => nd.id);
+}
+
+function getTotalSupplyDistance(s) {
+  let total = 0;
+  MAP_CONFIG.mapNodes.forEach(nd => {
+    if (s.map.nodes[nd.id].state === 'claimed') total += nd.distance;
+  });
+  return total;
+}
+
+function getRequiredSecurity(s) {
+  return getTotalSupplyDistance(s) * MAP_CONFIG.supplyLineSecurityPerDist;
+}
+
+function getNodeRewardMultipliers(s) {
+  const mults = { foodMult: 1, matsMult: 1, growthMult: 1, foodCapBonus: 0, matsCapBonus: 0 };
+  const rMult = getBiomeModifiers().rewardMult;
+  MAP_CONFIG.mapNodes.forEach(nd => {
+    if (s.map.nodes[nd.id].state === 'claimed') {
+      const r = nd.reward;
+      if (r.foodMult) mults.foodMult += r.foodMult * rMult;
+      if (r.matsMult) mults.matsMult += r.matsMult * rMult;
+      if (r.growthMult) mults.growthMult += r.growthMult * rMult;
+      if (r.foodCapBonus) mults.foodCapBonus += Math.floor(r.foodCapBonus * rMult);
+      if (r.matsCapBonus) mults.matsCapBonus += Math.floor(r.matsCapBonus * rMult);
+    }
+  });
+  return mults;
+}
+
+function updateNodeVisibility(s) {
+  const claimed = getClaimedNodes(s);
+  MAP_CONFIG.mapNodes.forEach(nd => {
+    const st = s.map.nodes[nd.id];
+    if (st.state === 'claimed' || st.state === 'breached') return;
+    if (st.state === 'hidden') {
+      if (nd.connections.length === 0 || nd.connections.every(cid => claimed.includes(cid))) {
+        st.state = 'scoutable';
+      }
+    }
+  });
+}
+
+function canScoutNode(s, nodeId) {
+  const st = getNodeState(s, nodeId);
+  return st && st.state === 'scoutable';
+}
+
+function canSiegeNode(s, nodeId) {
+  const st = getNodeState(s, nodeId);
+  return st && st.state === 'revealed';
+}
+
+function startScout(nodeId) {
+  const st = getNodeState(G, nodeId);
+  const def = getMapNodeDef(nodeId);
+  if (!st || st.state !== 'scoutable' || !def) return;
+  st.state = 'scouting';
+  st.scoutTimer = def.scoutSec * getBiomeModifiers().timerMult;
+  updateUI();
+}
+
+function startSiege(nodeId) {
+  const st = getNodeState(G, nodeId);
+  const def = getMapNodeDef(nodeId);
+  if (!st || st.state !== 'revealed' || !def) return;
+  st.state = 'under_siege';
+  st.siegeTimer = def.siegeSec * getBiomeModifiers().timerMult;
+  updateUI();
+}
+
+function claimNode(nodeId) {
+  const st = getNodeState(G, nodeId);
+  if (!st || st.state !== 'revealed') return;
+  st.state = 'claimed';
+  st.breachTimer = 0;
+  st.breachWarned = false;
+  updateNodeVisibility(G);
+  updateUI();
+}
+
+function repairNode(nodeId) {
+  const st = getNodeState(G, nodeId);
+  if (!st || st.state !== 'breached') return;
+  if (G.resources.materials < MAP_CONFIG.nodeRepairCost) return;
+  G.resources.materials -= MAP_CONFIG.nodeRepairCost;
+  st.state = 'claimed';
+  st.breachTimer = 0;
+  st.breachWarned = false;
+  updateUI();
+}
+
+function tickMapNodes(s, dt, skipBreaches) {
+  const requiredSec = getRequiredSecurity(s);
+  const claimedIds = getClaimedNodes(s);
+  const pmod = getPrestigeModifiers();
+  const scoutMult = 1 + (pmod.scoutSpeed || 0);
+  const effBreachGrace = MAP_CONFIG.breachGraceSeconds * (1 + (pmod.breachResistance || 0));
+
+  MAP_CONFIG.mapNodes.forEach(nd => {
+    const st = s.map.nodes[nd.id];
+
+    if (st.state === 'scouting') {
+      st.scoutTimer -= dt * scoutMult;
+      if (st.scoutTimer <= 0) {
+        st.scoutTimer = 0;
+        st.state = 'revealed';
+      }
+    }
+
+    if (st.state === 'under_siege') {
+      st.siegeTimer -= dt;
+      if (st.siegeTimer <= 0) {
+        st.siegeTimer = 0;
+        st.state = 'claimed';
+        updateNodeVisibility(s);
+      }
+    }
+
+    if (!skipBreaches && (st.state === 'claimed' || st.state === 'threatened')) {
+      if (s.security < requiredSec) {
+        if (st.state === 'claimed') st.state = 'threatened';
+        st.breachTimer += dt;
+        if (st.breachTimer >= effBreachGrace) {
+          st.state = 'breached';
+          st.breachTimer = 0;
+        }
+      } else {
+        if (st.state === 'threatened') {
+          st.state = 'claimed';
+          st.breachTimer = 0;
+          st.breachWarned = false;
+        }
+      }
+    }
+  });
+
+  updateNodeVisibility(s);
+}
+
+function getSupplyLineStatus(s) {
+  const required = getRequiredSecurity(s);
+  const current = s.security;
+  if (required === 0) return 'safe';
+  const ratio = current / required;
+  if (ratio >= 1) return 'safe';
+  if (ratio >= 0.5) return 'strained';
+  return 'danger';
+}
+
+function getSupplyLineStatusLabel(s) {
+  const required = getRequiredSecurity(s);
+  const current = Math.floor(s.security);
+  const dist = getTotalSupplyDistance(s);
+  if (dist === 0) return 'No active supply lines';
+  const status = getSupplyLineStatus(s);
+  if (status === 'safe') return `Secure (${current}/${required})`;
+  if (status === 'strained') return `Strained — need ${required - current} more Security`;
+  return `DANGER — need ${required - current} more Security`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MAP RENDER
+// ═══════════════════════════════════════════════════════════
+function renderMapViewport() {
+  const svg = document.getElementById('map-svg');
+  const w = svg.clientWidth || 390;
+  const h = svg.clientHeight || 337;
+  const pos = MAP_CONFIG.mapNodePositions;
+  const claimed = getClaimedNodes(G);
+
+  const getX = (pct) => (pct / 100) * w;
+  const getY = (pct) => (pct / 100) * h;
+
+  let html = '';
+
+  // Connections
+  MAP_CONFIG.mapConnections.forEach(conn => {
+    let x1, y1, x2, y2;
+    if (conn.from === 'home') {
+      x1 = getX(50); y1 = getY(98);
+    } else {
+      x1 = getX(pos[conn.from].x); y1 = getY(pos[conn.from].y);
+    }
+    x2 = getX(pos[conn.to].x); y2 = getY(pos[conn.to].y);
+
+    const toState = G.map.nodes[conn.to] ? G.map.nodes[conn.to].state : 'hidden';
+    let strokeColor = '#3a3a28';
+    if (toState === 'claimed') strokeColor = '#5a8a30';
+    else if (toState === 'revealed' || toState === 'under_siege') strokeColor = '#8a7020';
+    else if (toState === 'scouting' || toState === 'scoutable') strokeColor = '#506080';
+    else if (toState === 'breached') strokeColor = '#8a3030';
+
+    html += `<line class="node-svg-line" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${strokeColor}" stroke-width="2"/>`;
+  });
+
+  // Home node
+  html += `<circle class="node-svg-circle" cx="${getX(50)}" cy="${getY(98)}" r="12" fill="#d4a040" stroke="#f0c050" stroke-width="2"/>`;
+  html += `<text class="map-home-label" x="${getX(50)}" y="${getY(98) + 3}">🏠</text>`;
+  html += `<text class="map-home-label" x="${getX(50)}" y="${getY(98) + 22}">Nest</text>`;
+
+  // Map nodes
+  const TILE_SIZE = 44;
+  MAP_CONFIG.mapNodes.forEach(nd => {
+    const st = G.map.nodes[nd.id];
+    const cx = getX(pos[nd.id].x);
+    const cy = getY(pos[nd.id].y);
+    const isSelected = G.map.selectedNode === nd.id;
+
+    const stateClass = st.state.replace(/_/g, '-');
+
+    html += `<image class="node-svg-circle" href="assets/node_sunny_rock_states.png" 
+      x="${cx - TILE_SIZE/2}" y="${cy - TILE_SIZE/2}" 
+      width="${TILE_SIZE}" height="${TILE_SIZE}" 
+      data-node-id="${nd.id}" data-node="${nd.id}"
+      style="image-rendering:pixelated;${isSelected ? 'filter:brightness(1.4) drop-shadow(0 0 4px #d4a040);' : ''}"/>`;
+
+    html += `<text class="node-svg-label" x="${cx}" y="${cy + 28}">${nd.name}</text>`;
+  });
+
+  svg.innerHTML = html;
+
+  // Apply state-based background-position via JS (SVG image doesn't support CSS background-position)
+  svg.querySelectorAll('image[data-node-id]').forEach(img => {
+    const ndId = img.dataset.nodeId;
+    const st = G.map.nodes[ndId];
+    if (!st) return;
+    const stateIdx = { hidden: 0, scoutable: 1, scouting: 2, revealed: 3, under_siege: 4, claimed: 5, threatened: 6, breached: 7 };
+    const idx = stateIdx[st.state] || 0;
+    const nd = getMapNodeDef(ndId);
+    // Use the correct node sheet for each node type
+    const sheetMap = { sunny_rock: 'node_sunny_rock', mossy_log: 'node_mossy_log', cracked_paver: 'node_cracked_paver', compost_edge: 'node_compost_edge', fallen_plum: 'node_compost_edge' };
+    const sheet = sheetMap[ndId] || 'node_sunny_rock';
+    img.setAttribute('href', `assets/${sheet}_states.png`);
+    // Clip to show only the relevant state frame
+    img.setAttribute('clip-path', `inset(0 ${(7-idx)*TILE_SIZE} 0 ${idx*TILE_SIZE})`);
+    img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    img.addEventListener('click', () => selectMapNode(ndId));
+  });
+}
+
+function selectMapNode(nodeId) {
+  const st = getNodeState(G, nodeId);
+  if (!st || st.state === 'hidden') return;
+  G.map.selectedNode = nodeId;
+  renderMapViewport();
+  renderMapDeck();
+}
+
+function renderMapDeck() {
+  const container = document.getElementById('map-node-detail');
+  const s = G;
+  const selectedId = s.map.selectedNode;
+
+  if (!selectedId) {
+    container.innerHTML = '<div id="map-empty-msg">Tap a node on the map to inspect it.</div>';
+    return;
+  }
+
+  const nd = getMapNodeDef(selectedId);
+  const st = getNodeState(s, selectedId);
+  if (!nd || !st) return;
+
+  const stateLabels = {
+    hidden: 'Hidden', scoutable: 'Scoutable', scouting: 'Scouting',
+    revealed: 'Siege Ready', under_siege: 'Under Siege', claimed: 'Claimed',
+    threatened: 'Threatened', breached: 'Breached'
+  };
+  const stateBadgeClasses = {
+    hidden: 'badge-hidden', scoutable: 'badge-scoutable', scouting: 'badge-scouting',
+    revealed: 'badge-revealed', under_siege: 'badge-siege', claimed: 'badge-claimed',
+    threatened: 'badge-threatened', breached: 'badge-breached'
+  };
+
+  let rewardHtml = '';
+  if (nd.reward.foodMult) rewardHtml += `<div class="node-reward">+${(nd.reward.foodMult * 100).toFixed(0)}% Food production</div>`;
+  if (nd.reward.matsMult) rewardHtml += `<div class="node-reward">+${(nd.reward.matsMult * 100).toFixed(0)}% Materials production</div>`;
+  if (nd.reward.growthMult) rewardHtml += `<div class="node-reward">+${(nd.reward.growthMult * 100).toFixed(0)}% Growth speed</div>`;
+  if (nd.reward.foodCapBonus) rewardHtml += `<div class="node-reward">+${nd.reward.foodCapBonus} Food capacity</div>`;
+  if (nd.reward.matsCapBonus) rewardHtml += `<div class="node-reward">+${nd.reward.matsCapBonus} Materials capacity</div>`;
+
+  let timerHtml = '';
+  const tMul = getBiomeModifiers().timerMult;
+  if (st.state === 'scouting') {
+    const fullScout = nd.scoutSec * tMul;
+    const pct = st.scoutTimer > 0 ? Math.max(0, Math.min(100, (1 - st.scoutTimer / fullScout) * 100)).toFixed(0) : 0;
+    timerHtml = `<div class="timer-bar-wrap"><div class="timer-bar-fill scout" style="width:${pct}%"></div></div>`;
+  } else if (st.state === 'under_siege') {
+    const fullSiege = nd.siegeSec * tMul;
+    const pct = st.siegeTimer > 0 ? Math.max(0, Math.min(100, (1 - st.siegeTimer / fullSiege) * 100)).toFixed(0) : 0;
+    timerHtml = `<div class="timer-bar-wrap"><div class="timer-bar-fill siege" style="width:${pct}%"></div></div>`;
+  } else if (st.state === 'threatened') {
+    const effGrace = MAP_CONFIG.breachGraceSeconds * (1 + (getPrestigeModifiers().breachResistance || 0));
+    const pct = Math.min(100, ((st.breachTimer || 0) / effGrace) * 100).toFixed(0);
+    timerHtml = `<div class="timer-bar-wrap"><div class="timer-bar-fill breach" style="width:${pct}%"></div></div>
+      <div style="font-size:10px;color:var(--red);margin-top:2px;">Breach in ${Math.max(0, Math.ceil(effGrace - (st.breachTimer || 0)))}s</div>`;
+  }
+
+  let actionHtml = '';
+  if (st.state === 'scoutable') {
+    actionHtml = `<button class="btn-node-action ready" id="btn-scout">🔍 Scout (${Math.ceil(nd.scoutSec * tMul)}s)</button>`;
+  } else if (st.state === 'scouting') {
+    actionHtml = `<div style="font-size:11px;color:var(--blue);text-align:center;">Scouting... ${Math.ceil(st.scoutTimer)}s remaining</div>`;
+  } else if (st.state === 'revealed') {
+    actionHtml = `<button class="btn-node-action ready" id="btn-siege">⚔️ Attack</button>`;
+  } else if (st.state === 'under_siege') {
+    actionHtml = `<div style="font-size:11px;color:var(--red-bright);text-align:center;">Besieging... ${Math.ceil(st.siegeTimer)}s remaining</div>`;
+  } else if (st.state === 'claimed') {
+    actionHtml = `<div style="font-size:11px;color:var(--green-bright);text-align:center;">✓ Claimed — bonus active</div>`;
+  } else if (st.state === 'threatened') {
+    actionHtml = `<div style="font-size:11px;color:var(--red);text-align:center;">⚠️ Supply line under pressure — assign more Soldiers</div>`;
+  } else if (st.state === 'breached') {
+    actionHtml = `<button class="btn-node-action danger" id="btn-repair">🔧 Repair (${MAP_CONFIG.nodeRepairCost} Mats)</button>`;
+  }
+
+  container.innerHTML = `
+    <div class="node-card selected">
+      <div class="node-header">
+        <span class="node-state-badge ${stateBadgeClasses[st.state] || 'badge-hidden'}">${stateLabels[st.state] || st.state}</span>
+        <span class="node-name">${nd.name}</span>
+      </div>
+      <div class="node-desc">${nd.desc}</div>
+      ${rewardHtml}
+      <div class="node-info-row">
+        <span class="node-info-item">Dist: <span class="val">${nd.distance}</span></span>
+        <span class="node-info-item">Threat: <span class="val" style="color:var(--red);">${nd.threat}</span></span>
+      </div>
+      ${timerHtml}
+      <div class="node-action-row">${actionHtml}</div>
+    </div>
+  `;
+
+  const btnScout = document.getElementById('btn-scout');
+  if (btnScout) btnScout.addEventListener('click', () => { startScout(selectedId); renderMapViewport(); renderMapDeck(); });
+  const btnSiege = document.getElementById('btn-siege');
+  if (btnSiege) btnSiege.addEventListener('click', () => { showCombatPreview(selectedId); });
+  const btnRepair = document.getElementById('btn-repair');
+  if (btnRepair) btnRepair.addEventListener('click', () => { repairNode(selectedId); renderMapViewport(); renderMapDeck(); });
+
+  const supplyEl = document.getElementById('supply-summary');
+  const supplyStatus = getSupplyLineStatus(s);
+  supplyEl.className = supplyStatus;
+  document.getElementById('supply-text').textContent = getSupplyLineStatusLabel(s);
+  document.getElementById('supply-sec-text').textContent = `Supply Dist: ${getTotalSupplyDistance(s)}`;
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('map-viewport').classList.toggle('active', tab === 'map');
+  document.getElementById('viewport-bg').style.display = tab === 'map' ? 'none' : '';
+  document.getElementById('viewport-ants').style.display = tab === 'map' ? 'none' : '';
+  document.getElementById('nest-deck-content').classList.toggle('hidden', tab === 'map');
+  document.getElementById('map-deck').classList.toggle('active', tab === 'map');
+  if (tab === 'map') { renderMapViewport(); renderMapDeck(); }
+  updateUI();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COMBAT SYSTEM
+// ═══════════════════════════════════════════════════════════
+function getUnitComposition(s) {
+  const soldiers = s.assigned.soldiers || 0;
+  if (soldiers === 0) return { majors: 0, swarmers: 0, spitters: 0 };
+  const stance = COMBAT_CONFIG.stances[s.combatStance] || COMBAT_CONFIG.stances.balanced;
+  const majors = Math.floor(soldiers * stance.major);
+  const swarmers = Math.floor(soldiers * stance.swarmer);
+  const spitters = soldiers - majors - swarmers;
+  return { majors, swarmers, spitters };
+}
+
+function getEnemyTypeForNode(nodeId) {
+  const nd = getMapNodeDef(nodeId);
+  if (!nd) return null;
+  const key = getEnemyTypeKey(nd.threat);
+  return COMBAT_CONFIG.enemyTypes[key];
+}
+
+function getEffectiveUnitPower(unitType, enemy) {
+  let power = COMBAT_CONFIG[unitType + 'BasePower'];
+  const pmod = getPrestigeModifiers();
+  if (unitType === 'major' && pmod.majorPower) power *= (1 + pmod.majorPower);
+  if (unitType === 'spitter' && pmod.spitterPower) power *= (1 + pmod.spitterPower);
+  if (!enemy || !enemy.traits) return power;
+  enemy.traits.forEach(trait => {
+    const key = unitType + '_vs_' + trait;
+    if (COMBAT_CONFIG.matchups[key]) power *= COMBAT_CONFIG.matchups[key];
+  });
+  return power;
+}
+
+function calculateCombat(s, nodeId) {
+  const enemy = getEnemyTypeForNode(nodeId);
+  const nd = getMapNodeDef(nodeId);
+  if (!enemy || !nd) return null;
+
+  const units = getUnitComposition(s);
+  const secMul = securityMultiplier(s);
+  const majPow = units.majors * getEffectiveUnitPower('major', enemy) * secMul;
+  const swaPow = units.swarmers * getEffectiveUnitPower('swarmer', enemy) * secMul;
+  const spiPow = units.spitters * getEffectiveUnitPower('spitter', enemy) * secMul;
+  const playerPower = majPow + swaPow + spiPow;
+
+  const distPow = 1 + (nd.distance - 1) * 0.15;
+  const biome = getBiomeModifiers();
+  const enemyPower = enemy.power * distPow * biome.enemyPowerMult;
+
+  const ratio = enemyPower > 0 ? playerPower / enemyPower : 999;
+  const thresh = COMBAT_CONFIG.outcomeThresholds;
+
+  let outcome, casualtyRate, label;
+  if (ratio >= thresh.clean) {
+    outcome = 'clean'; casualtyRate = 0.03; label = 'Clean Victory';
+  } else if (ratio >= thresh.costly) {
+    outcome = 'costly'; casualtyRate = 0.18; label = 'Costly Victory';
+  } else if (ratio >= thresh.pyrrhic) {
+    outcome = 'pyrrhic'; casualtyRate = 0.45; label = 'Pyrrhic Victory';
+  } else {
+    outcome = 'defeat'; casualtyRate = 0.65; label = 'Defeat';
+  }
+
+  const soldierLoss = Math.max(1, Math.floor((units.majors + units.swarmers + units.spitters) * casualtyRate));
+  const workerLoss = outcome === 'defeat' ? Math.floor((s.assigned.foragers + s.assigned.excavators) * 0.25) :
+                     outcome === 'pyrrhic' ? Math.floor((s.assigned.foragers + s.assigned.excavators) * 0.08) : 0;
+
+  const salvageChitin = outcome !== 'defeat' ? Math.floor(enemyPower * COMBAT_CONFIG.salvageMult) : 0;
+
+  return {
+    nodeId, enemy, enemyPower: enemyPower.toFixed(0), playerPower: playerPower.toFixed(0),
+    ratio: ratio.toFixed(2), outcome, label, casualtyRate,
+    units,
+    soldierLoss, workerLoss, salvageChitin,
+    combatDuration: COMBAT_CONFIG.combatDuration
+  };
+}
+
+function showCombatPreview(nodeId) {
+  const s = G;
+  const calc = calculateCombat(s, nodeId);
+  if (!calc) return;
+
+  const overlay = document.getElementById('combat-overlay');
+  const preview = document.getElementById('combat-preview');
+  const arena = document.getElementById('battle-arena');
+  const results = document.getElementById('combat-results');
+
+  overlay.classList.add('active');
+  preview.classList.add('active');
+  arena.classList.remove('active');
+  results.classList.remove('active');
+
+  document.getElementById('cp-title').textContent = `⚔️ Besiege ${getMapNodeDef(nodeId).name}`;
+  document.getElementById('cp-enemy').innerHTML = `${calc.enemy.icon} ${calc.enemy.name} — Power ${calc.enemyPower}`;
+
+  const u = calc.units;
+  document.getElementById('cp-details').innerHTML = `
+    <div class="cp-row"><span>Your Soldiers</span><span class="val">${s.assigned.soldiers} total</span></div>
+    <div class="cp-row"><span>🛡️ Majors</span><span class="val">${u.majors} (vs armor)</span></div>
+    <div class="cp-row"><span>⚔️ Swarmers</span><span class="val">${u.swarmers} (vs heavy)</span></div>
+    <div class="cp-row"><span>🏹 Spitters</span><span class="val">${u.spitters} (vs flying)</span></div>
+    <div class="cp-row"><span>Your Power</span><span class="val">${calc.playerPower}</span></div>
+    <div class="cp-row"><span>Enemy Power</span><span class="val" style="color:var(--red)">${calc.enemyPower}</span></div>
+    <div class="cp-row"><span>Est. Casualties</span><span class="val" style="color:${calc.outcome === 'defeat' ? 'var(--danger)' : 'var(--amber)'}">~${calc.soldierLoss} soldiers</span></div>
+  `;
+
+  const outcomeEl = document.getElementById('cp-outcome');
+  outcomeEl.textContent = `Estimated: ${calc.label}`;
+  outcomeEl.className = 'cp-outcome ' + (calc.outcome === 'clean' ? 'clean' : calc.outcome === 'costly' ? 'costly' : calc.outcome === 'pyrrhic' ? 'risky' : 'danger');
+
+  window._pendingCombat = calc;
+  window._pendingNodeId = nodeId;
+}
+
+function startCombat() {
+  if (!window._pendingCombat || !window._pendingNodeId) return;
+  const calc = window._pendingCombat;
+  const nodeId = window._pendingNodeId;
+
+  const overlay = document.getElementById('combat-overlay');
+  const preview = document.getElementById('combat-preview');
+  const arena = document.getElementById('battle-arena');
+  const results = document.getElementById('combat-results');
+
+  preview.classList.remove('active');
+  arena.classList.add('active');
+  results.classList.remove('active');
+
+  G.combat = {
+    active: true,
+    nodeId: nodeId,
+    timer: calc.combatDuration,
+    enemy: calc.enemy,
+    calc: calc,
+    phase: 'active',
+    events: [],
+    eventTimer: 0,
+    hitsDealt: 0,
+    hitsTaken: 0
+  };
+
+  renderCombatArena();
+  document.getElementById('battle-event-log').innerHTML = '';
+  addCombatEvent('neutral', `Engaging ${calc.enemy.name}...`);
+
+  document.getElementById('battle-stage').classList.remove('battle-shake');
+}
+
+function addCombatEvent(type, msg) {
+  const log = document.getElementById('battle-event-log');
+  if (!log) return;
+  const el = document.createElement('div');
+  el.className = 'blog-line ' + type;
+  el.textContent = msg;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+  if (G.combat) G.combat.events.push({ type, msg });
+}
+
+function renderCombatArena() {
+  if (!G.combat || !G.combat.active) return;
+  const c = G.combat;
+  document.getElementById('battle-enemy').textContent = '';
+  const enemySprite = document.getElementById('battle-enemy-sprite');
+  enemySprite.style.display = 'block';
+  // Update enemy sprite based on type (use armored beetle as default)
+  if (c.enemy.icon === '🪲' || c.enemy.icon === '🪳') {
+    enemySprite.style.backgroundImage = "url('assets/enemy_armored_beetle_sheet.png')";
+  }
+
+  const u = c.calc.units;
+  let antsHtml = '';
+  for (let i = 0; i < Math.min(u.majors, 6); i++) antsHtml += '<span class="sprite-role major" style="display:inline-block;width:24px;height:24px;background-size:100px 67px;"></span>';
+  for (let i = 0; i < Math.min(u.swarmers, 6); i++) antsHtml += '<span class="sprite-role swarmer" style="display:inline-block;width:24px;height:24px;background-size:100px 67px;"></span>';
+  for (let i = 0; i < Math.min(u.spitters, 4); i++) antsHtml += '<span class="sprite-role spitter" style="display:inline-block;width:24px;height:24px;background-size:100px 67px;"></span>';
+  document.getElementById('battle-ants-row').innerHTML = antsHtml;
+}
+
+function tickCombat(dt) {
+  if (!G.combat || !G.combat.active) return;
+  const c = G.combat;
+  c.timer -= dt;
+
+  c.eventTimer += dt;
+  const totalDuration = c.calc.combatDuration;
+  const elapsed = totalDuration - c.timer;
+  const progress = elapsed / totalDuration;
+
+  const totalEvents = 6;
+  const eventsTriggered = Math.floor(progress * totalEvents);
+
+  while (c.events.length < eventsTriggered) {
+    const evtNum = c.events.length + 1;
+    const isPlayerHit = evtNum % 2 === 1;
+
+    if (isPlayerHit) {
+      c.hitsDealt++;
+      addCombatEvent('player', `Majors crush the ${c.enemy.name}'s carapace!`);
+      triggerHaptic('light');
+    } else {
+      c.hitsTaken++;
+      addCombatEvent('enemy', `${c.enemy.name} strikes back — casualties mount.`);
+      triggerHaptic('light');
+    }
+
+    const stage = document.getElementById('battle-stage');
+    stage.classList.add('battle-shake');
+    stage.classList.add('battle-hit-flash');
+    if (isPlayerHit) {
+      const shellCrack = document.createElement('div');
+      shellCrack.className = 'fx-shell-crack';
+      shellCrack.style.left = (30 + Math.random() * 40) + '%';
+      shellCrack.style.top = (20 + Math.random() * 30) + '%';
+      stage.appendChild(shellCrack);
+      setTimeout(() => shellCrack.remove(), 450);
+
+      const ichor = document.createElement('div');
+      ichor.className = 'fx-ichor';
+      ichor.style.left = (20 + Math.random() * 50) + '%';
+      ichor.style.top = (30 + Math.random() * 30) + '%';
+      stage.appendChild(ichor);
+      setTimeout(() => ichor.remove(), 550);
+    } else {
+      const acid = document.createElement('div');
+      acid.className = 'fx-acid';
+      acid.style.left = (25 + Math.random() * 40) + '%';
+      acid.style.top = (40 + Math.random() * 20) + '%';
+      stage.appendChild(acid);
+      setTimeout(() => acid.remove(), 550);
+    }
+    setTimeout(() => { stage.classList.remove('battle-shake'); stage.classList.remove('battle-hit-flash'); }, 120);
+  }
+
+  if (c.timer <= 0) {
+    finishCombat();
+  }
+}
+
+function finishCombat() {
+  if (!G.combat || !G.combat.active) return;
+  const c = G.combat;
+  const calc = c.calc;
+
+  c.active = false;
+  c.phase = 'resolved';
+
+  const s = G;
+  const nodeId = c.nodeId;
+
+  if (calc.outcome !== 'defeat') {
+    const st = getNodeState(s, nodeId);
+    if (st) {
+      st.state = 'claimed';
+      st.breachTimer = 0;
+      st.breachWarned = false;
+    }
+    updateNodeVisibility(s);
+  }
+
+  // Apply casualties
+  const soldierLoss = Math.min(calc.soldierLoss, s.assigned.soldiers);
+  s.assigned.soldiers = Math.max(0, s.assigned.soldiers - soldierLoss);
+  s.population.adults = Math.max(0, s.population.adults - soldierLoss);
+
+  if (calc.workerLoss > 0) {
+    const wl = Math.min(calc.workerLoss, s.assigned.foragers + s.assigned.excavators);
+    const fromForagers = Math.min(wl, s.assigned.foragers);
+    s.assigned.foragers = Math.max(0, s.assigned.foragers - fromForagers);
+    s.assigned.excavators = Math.max(0, s.assigned.excavators - (wl - fromForagers));
+    s.population.adults = Math.max(0, s.population.adults - wl);
+  }
+
+  enforceAssignmentLimits(s);
+
+  // Apply salvage
+  if (calc.salvageChitin > 0) {
+    s.resources.materials = Math.min(s.caps.materials, s.resources.materials + calc.salvageChitin);
+  }
+
+  // Show results
+  const overlay = document.getElementById('combat-overlay');
+  const arena = document.getElementById('battle-arena');
+  const results = document.getElementById('combat-results');
+  arena.classList.remove('active');
+  results.classList.add('active');
+
+  const banner = document.getElementById('cr-banner');
+  banner.textContent = calc.outcome === 'clean' ? '🏆 Clean Victory!' :
+                       calc.outcome === 'costly' ? '⚔️ Costly Victory' :
+                       calc.outcome === 'pyrrhic' ? '⚠️ Pyrrhic Victory' : '💀 Defeat';
+  banner.className = calc.outcome === 'clean' ? 'victory' : (calc.outcome === 'costly' || calc.outcome === 'pyrrhic') ? 'costly' : 'defeat';
+
+  let statsHtml = `
+    <div class="cr-stat"><span>Enemy</span><span class="val" style="color:var(--red)">${calc.enemy.name}</span></div>
+    <div class="cr-stat"><span>Power Ratio</span><span class="val">${calc.ratio}</span></div>
+    <div class="cr-stat"><span>Soldiers Lost</span><span class="val" style="color:var(--danger)">${soldierLoss}</span></div>`;
+  if (calc.workerLoss > 0) {
+    statsHtml += `<div class="cr-stat"><span>Workers Lost</span><span class="val" style="color:var(--danger)">${calc.workerLoss}</span></div>`;
+  }
+  statsHtml += `<div class="cr-stat"><span>Node</span><span class="val">${calc.outcome !== 'defeat' ? 'Claimed ✓' : 'Not claimed'}</span></div>`;
+  document.getElementById('cr-stats').innerHTML = statsHtml;
+
+  const salvageEl = document.getElementById('cr-salvage');
+  salvageEl.innerHTML = calc.salvageChitin > 0 ? `🦴 Salvaged +${calc.salvageChitin} Materials from the battlefield.` : '';
+
+  const recoveryEl = document.getElementById('cr-recovery');
+  if (calc.outcome === 'defeat') {
+    recoveryEl.innerHTML = '💡 <b>Recovery:</b> Assign more Soldiers or upgrade the Guard Chamber. Try a different stance against this enemy type.';
+  } else if (calc.outcome === 'pyrrhic') {
+    recoveryEl.innerHTML = '💡 <b>Recovery:</b> Heavy losses. Boost Soldier count before the next siege. Consider upgrading the Nursery to regrow faster.';
+  } else if (calc.outcome === 'costly') {
+    recoveryEl.innerHTML = '💡 <b>Recovery:</b> Moderate losses. Assign more Foragers to offset the population hit. Check your stance matchup.';
+  } else {
+    recoveryEl.innerHTML = '';
+  }
+
+  triggerHaptic('heavy');
+  saveGame();
+  updateUI();
+}
+
+function closeCombatOverlay() {
+  const overlay = document.getElementById('combat-overlay');
+  overlay.classList.remove('active');
+  document.getElementById('combat-preview').classList.remove('active');
+  document.getElementById('battle-arena').classList.remove('active');
+  document.getElementById('combat-results').classList.remove('active');
+  G.combat = null;
+  window._pendingCombat = null;
+  window._pendingNodeId = null;
+  updateUI();
+}
+
+function triggerHaptic(pattern) {
+  if (!settings.haptics) return;
+  try {
+    if (navigator.vibrate) {
+      if (pattern === 'light') navigator.vibrate(15);
+      else if (pattern === 'heavy') navigator.vibrate([30, 50, 30]);
+      else navigator.vibrate(10);
+    }
+  } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PRESTIGE SYSTEM
+// ═══════════════════════════════════════════════════════════
+function getBiomeModifiers() {
+  const biome = G.prestige ? G.prestige.currentBiome : 'garden';
+  return PRESTIGE_CONFIG.biomes[biome] || PRESTIGE_CONFIG.biomes.garden;
+}
+
+function getPrestigeModifiers() {
+  const mods = { majorPower: 0, foodUpkeep: 0, scoutSpeed: 0, breachResistance: 0, spitterPower: 0 };
+  if (!G.prestige || !G.prestige.mutations) return mods;
+  G.prestige.mutations.forEach(mutId => {
+    const def = PRESTIGE_CONFIG.mutations.find(m => m.id === mutId);
+    if (!def) return;
+    Object.keys(def.effect).forEach(k => {
+      mods[k] = (mods[k] || 0) + def.effect[k];
+    });
+  });
+  return mods;
+}
+
+function getPrestigeProgress(s) {
+  const claimed = getClaimedNodes(s).length;
+  const pop = s.population.adults;
+  const nodeReq = PRESTIGE_CONFIG.requiredNodes;
+  const popReq = PRESTIGE_CONFIG.requiredPop;
+  const nodePct = Math.min(1, claimed / nodeReq);
+  const popPct = Math.min(1, pop / popReq);
+  const pct = Math.floor((nodePct * 0.7 + popPct * 0.3) * 100);
+  const ready = claimed >= nodeReq && pop >= popReq;
+  return { pct, ready, claimed, nodeReq, pop, popReq };
+}
+
+function updatePrestigeTracker() {
+  const s = G;
+  const prog = getPrestigeProgress(s);
+  document.getElementById('pt-bar-fill').style.width = prog.pct + '%';
+  document.getElementById('pt-label').textContent = `Nuptial Flight (${prog.claimed}/${prog.nodeReq} nodes · ${Math.floor(prog.pop)}/${prog.popReq} pop)`;
+  const tracker = document.getElementById('prestige-tracker');
+  const btn = document.getElementById('btn-nuptial');
+  if (prog.ready) {
+    tracker.classList.add('ready');
+    btn.classList.add('show');
+  } else {
+    tracker.classList.remove('ready');
+    btn.classList.remove('show');
+  }
+  const gen = G.prestige ? G.prestige.generation : 0;
+  document.getElementById('active-mutations').textContent = gen > 0
+    ? `🦋 Generation ${gen} · ${G.prestige.mutations.length} mutation${G.prestige.mutations.length > 1 ? 's' : ''} active`
+    : '';
+}
+
+function showPrestigeModal() {
+  const s = G;
+  const overlay = document.getElementById('prestige-overlay');
+  const panel = document.getElementById('prestige-panel');
+  overlay.classList.add('active');
+
+  const biomeMod = getBiomeModifiers();
+  const nextBiomeKey = G.prestige.generation === 0 ? PRESTIGE_CONFIG.prestigeBiome : PRESTIGE_CONFIG.defaultBiome;
+  const nextBiome = PRESTIGE_CONFIG.biomes[nextBiomeKey];
+  const nextGen = (G.prestige.generation || 0) + 1;
+  const availableMutations = PRESTIGE_CONFIG.mutations.filter(m => !G.prestige.mutations.includes(m.id));
+  if (availableMutations.length === 0) {
+    G.prestige.mutations = [];
+    PRESTIGE_CONFIG.mutations.forEach(m => availableMutations.push(m));
+  }
+
+  window._pendingMutation = availableMutations[0] ? availableMutations[0].id : null;
+  window._pendingBiome = G.prestige.unlockedBiomes[0] || 'garden';
+  window._prestigeStep = 'confirm';
+
+  renderPrestigePanel('confirm');
+}
+
+function renderPrestigePanel(step) {
+  const panel = document.getElementById('prestige-panel');
+  const s = G;
+  const nextGen = (s.prestige.generation || 0) + 1;
+  const nextBiomeKey = s.prestige.generation === 0 ? PRESTIGE_CONFIG.prestigeBiome : 'garden';
+  const nextBiome = PRESTIGE_CONFIG.biomes[nextBiomeKey];
+
+  if (step === 'confirm') {
+    const isFirstPrestige = s.prestige.generation === 0;
+    window._prestigeStep = 'confirm';
+    panel.innerHTML = `
+      <h2>🦋 Nuptial Flight</h2>
+      <h3>${isFirstPrestige ? 'Your colony has reached its limit. Launch a new generation.' : `Begin Generation ${nextGen} in a new colony.`}</h3>
+      <div class="prestige-section">
+        <h4>🔁 Will Reset</h4>
+        <ul class="prestige-reset-list">
+          <li>All Resources (Food, Materials, Security)</li>
+          <li>Population & Assignments</li>
+          <li>Nest Upgrades</li>
+          <li>All Claimed Map Nodes</li>
+        </ul>
+      </div>
+      <div class="prestige-section">
+        <h4>✨ Will Persist</h4>
+        <ul class="prestige-keep-list">
+          <li>${s.prestige.mutations.length} Mutation${s.prestige.mutations.length !== 1 ? 's' : ''} (stack permanently)</li>
+          <li>Settings & Preferences</li>
+          <li>Combat Stance</li>
+        </ul>
+      </div>
+      ${isFirstPrestige ? `
+      <div class="prestige-section">
+        <h4>🌍 New Biome Unlocked</h4>
+        <div style="font-size:10px;color:var(--text-dim);">${nextBiome.name}: ${nextBiome.desc}</div>
+        <div style="font-size:9px;color:var(--amber);margin-top:4px;">Enemies +${((nextBiome.enemyPowerMult-1)*100).toFixed(0)}% · Timers +${((nextBiome.timerMult-1)*100).toFixed(0)}% · Rewards +${((nextBiome.rewardMult-1)*100).toFixed(0)}%</div>
+      </div>
+      ` : ''}
+      <button id="btn-launch-flight" onclick="renderPrestigePanel('mutations')">Choose Mutation →</button>
+      <button class="btn-close" style="margin-top:6px;width:100%;" onclick="closePrestigeModal()">Cancel</button>
+    `;
+  } else if (step === 'mutations') {
+    window._prestigeStep = 'mutations';
+    const availableMutations = PRESTIGE_CONFIG.mutations.filter(m => !s.prestige.mutations.includes(m.id));
+    if (availableMutations.length === 0) {
+      s.prestige.mutations = [];
+      PRESTIGE_CONFIG.mutations.forEach(m => availableMutations.push(m));
+    }
+    if (!availableMutations.find(m => m.id === window._pendingMutation)) {
+      window._pendingMutation = availableMutations[0] ? availableMutations[0].id : null;
+    }
+
+    panel.innerHTML = `
+      <h2>🧬 Choose Mutation</h2>
+      <h3>Select one permanent genetic trait for generation ${nextGen}.</h3>
+      <div class="mutation-grid">
+        ${availableMutations.map(m => `
+          <div class="mutation-card${window._pendingMutation === m.id ? ' selected' : ''}" onclick="window._pendingMutation='${m.id}';renderPrestigePanel('mutations');" data-mut="${m.id}">
+            <span class="mut-icon">${m.icon}</span>
+            <div class="mut-info">
+              <div class="mut-name">${m.name}</div>
+              <div class="mut-desc">${m.desc}</div>
+            </div>
+            <span class="mut-check">✓</span>
+          </div>
+        `).join('')}
+      </div>
+      ${s.prestige.unlockedBiomes.length > 1 ? `
+      <div class="prestige-section" style="margin-top:8px;">
+        <h4>🌍 Choose Biome</h4>
+        <div id="biome-select">
+          ${s.prestige.unlockedBiomes.map(bk => {
+            const bm = PRESTIGE_CONFIG.biomes[bk];
+            return `<div class="biome-option${window._pendingBiome === bk ? ' selected' : ''}" onclick="window._pendingBiome='${bk}';renderPrestigePanel('mutations');">
+              <div class="biome-name">${bm.name}</div>
+              <div class="biome-desc">E:${((bm.enemyPowerMult-1)*100).toFixed(0)}% T:${((bm.timerMult-1)*100).toFixed(0)}% R:+${((bm.rewardMult-1)*100).toFixed(0)}%</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      ` : ''}
+      <button id="btn-launch-flight" ${!window._pendingMutation ? 'disabled' : ''} onclick="executePrestige()">🦋 Launch Nuptial Flight</button>
+      <button class="btn-close" style="margin-top:6px;width:100%;" onclick="renderPrestigePanel('confirm')">← Back</button>
+    `;
+  } else if (step === 'results') {
+    window._prestigeStep = 'results';
+    const gen = s.prestige.generation;
+    const lastMut = s.prestige.mutations[s.prestige.mutations.length - 1];
+    const lastMutDef = PRESTIGE_CONFIG.mutations.find(m => m.id === lastMut);
+    const currentBiome = PRESTIGE_CONFIG.biomes[s.prestige.currentBiome] || PRESTIGE_CONFIG.biomes.garden;
+    panel.innerHTML = `
+      <h2>🦋 Generation ${gen}</h2>
+      <h3>A new queen takes flight to the ${currentBiome.name}.</h3>
+      <div style="font-size:12px;color:var(--green);margin:8px 0;">✨ Inherited: ${lastMutDef ? lastMutDef.name : 'None'}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin:6px 0;">
+        ${currentBiome.desc}<br><br>
+        Enemies: +${((currentBiome.enemyPowerMult-1)*100).toFixed(0)}% power<br>
+        Timers: +${((currentBiome.timerMult-1)*100).toFixed(0)}% duration<br>
+        Rewards: +${((currentBiome.rewardMult-1)*100).toFixed(0)}% value
+      </div>
+      <div style="font-size:11px;color:var(--amber);margin:8px 0;">
+        Active mutations: ${s.prestige.mutations.map(m => {
+          const def = PRESTIGE_CONFIG.mutations.find(d => d.id === m);
+          return def ? def.name : m;
+        }).join(', ') || 'None'}
+      </div>
+      <button id="btn-launch-flight" onclick="closePrestigeModal()" style="background:var(--green);">Continue</button>
+    `;
+  }
+}
+
+function executePrestige() {
+  const mutId = window._pendingMutation;
+  if (!mutId) return;
+  const s = G;
+
+  s.prestige.generation = (s.prestige.generation || 0) + 1;
+  s.prestige.mutations.push(mutId);
+
+  // Select next biome
+  const nextBiome = window._pendingBiome || (s.prestige.generation === 1 ? PRESTIGE_CONFIG.prestigeBiome : s.prestige.unlockedBiomes[0] || 'garden');
+  if (!s.prestige.unlockedBiomes.includes(nextBiome)) {
+    s.prestige.unlockedBiomes.push(nextBiome);
+  }
+  s.prestige.currentBiome = nextBiome;
+
+  // Reset everything except prestige state
+  const base = createInitialState();
+  s.resources = base.resources;
+  s.caps = base.caps;
+  s.security = base.security;
+  s.population = base.population;
+  s.assigned = base.assigned;
+  s.upgrades = base.upgrades;
+  s.status = base.status;
+  s.combat = null;
+  s.combatStance = s.combatStance || 'balanced';
+  s.map = { nodes: {}, selectedNode: null };
+  initMapNodes(s);
+
+  s.session.lastTickTs = Date.now();
+  s.session.offlineApplied = true;
+
+  renderPrestigePanel('results');
+  saveGame();
+  updateUI();
+  renderMapViewport();
+  spawnViewportAnts();
+}
+
+function closePrestigeModal() {
+  document.getElementById('prestige-overlay').classList.remove('active');
+  window._pendingMutation = null;
+  window._prestigeStep = null;
+  updateUI();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SAVE / LOAD
+// ═══════════════════════════════════════════════════════════
+const SAVE_KEY = 'passive_ant_m2_save';
+const SETTINGS_KEY = 'passive_ant_m2_settings';
+const ONBOARD_KEY = 'passive_ant_m2_onboarded';
+
+function saveGame() {
+  G.session.lastTickTs = Date.now();
+  const combatBackup = G.combat;
+  G.combat = null;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); } catch (e) {}
+  G.combat = combatBackup;
+}
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.resources || !parsed.population || !parsed.assigned) return null;
+    return parsed;
+  } catch (e) { return null; }
+}
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+}
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) Object.assign(settings, JSON.parse(raw));
+  } catch (e) {}
+}
+
+function applyOfflineProgress(s, elapsedSec) {
+  const cappedSec = Math.min(elapsedSec, CONFIG.maxOfflineSeconds);
+  if (cappedSec <= 0) return { applied: false, gain: null };
+  const snap = JSON.parse(JSON.stringify(s));
+  for (let i = 0; i < Math.floor(cappedSec); i++) tick(snap, 1, true);
+  const foodGain = snap.resources.food - s.resources.food;
+  const matsGain = snap.resources.materials - s.resources.materials;
+  const secGain = snap.security - s.security;
+  const popGain = snap.population.adults - s.population.adults;
+  s.resources = snap.resources;
+  s.security = snap.security;
+  s.population = snap.population;
+  s.caps = snap.caps;
+  s.status = snap.status;
+  return {
+    applied: true, elapsed: cappedSec,
+    gain: { food: foodGain.toFixed(1), materials: matsGain.toFixed(1), security: secGain.toFixed(1), population: popGain.toFixed(1) }
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+function initGame() {
+  loadSettings();
+  const saved = loadGame();
+  if (saved) {
+    G = saved;
+    const now = Date.now();
+    const elapsed = (now - G.session.lastTickTs) / 1000;
+    if (elapsed > 1) {
+      const result = applyOfflineProgress(G, elapsed);
+      if (result.applied && result.gain && elapsed > 5) showOfflineToast(elapsed, result.gain);
+    }
+  } else {
+    G = createInitialState();
+    initMapNodes(G);
+  }
+  G.session.lastTickTs = Date.now();
+  G.session.offlineApplied = true;
+  G.prevStatus = G.status;
+  if (!G.map || !G.map.nodes || Object.keys(G.map.nodes).length === 0) {
+    G.map = { nodes: {}, selectedNode: null };
+    initMapNodes(G);
+  }
+  if (!G.combatStance) G.combatStance = 'balanced';
+  G.combat = null;
+  if (!G.prestige) {
+    G.prestige = { generation: 0, mutations: [], unlockedBiomes: ['garden'], currentBiome: 'garden' };
+  }
+  enforceAssignmentLimits(G);
+  applySettingsToDOM();
+  lastFrameTs = performance.now();
+  updateUI();
+  spawnViewportAnts();
+  if (!localStorage.getItem(ONBOARD_KEY)) showOnboarding();
+}
+
+function showOfflineToast(elapsed, gain) {
+  const min = Math.floor(elapsed / 60);
+  const sec = Math.floor(elapsed % 60);
+  const timeStr = min > 0 ? `${min}m ${sec}s` : `${sec}s`;
+  const toast = document.getElementById('offline-toast');
+  toast.className = '';
+  toast.innerHTML = `Away ${timeStr}<br>+${gain.food} Food · +${gain.materials} Mats · +${gain.population} Pop`;
+  setTimeout(() => { toast.className = 'hidden'; }, 4000);
+}
+
+function enforceAssignmentLimits(s) {
+  let remaining = s.population.adults - totalAssigned(s);
+  if (remaining < 0) {
+    const roles = ['soldiers', 'excavators', 'foragers'];
+    for (const r of roles) {
+      if (remaining >= 0) break;
+      const cut = Math.min(s.assigned[r], -remaining);
+      s.assigned[r] -= cut;
+      remaining += cut;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  VIEWPORT ANTS
+// ═══════════════════════════════════════════════════════════
+let antEls = [];
+
+function spawnViewportAnts() {
+  const container = document.getElementById('viewport-ants');
+  container.innerHTML = '';
+  antEls = [];
+
+  const roles = [
+    { key: 'foragers',  cls: 'forager',   count: 8  },
+    { key: 'excavators', cls: 'excavator', count: 5  },
+    { key: 'soldiers',  cls: 'soldier',   count: 4  }
+  ];
+
+  roles.forEach(role => {
+    for (let i = 0; i < role.count; i++) {
+      const el = document.createElement('div');
+      el.className = `vp-ant ${role.cls}`;
+      el.style.setProperty('--dur', (6 + Math.random() * 8).toFixed(1) + 's');
+      el.style.setProperty('--delay', (Math.random() * -10).toFixed(1) + 's');
+      el.style.setProperty('--dx1', (30 + Math.random() * 60).toFixed(0) + 'px');
+      el.style.setProperty('--dy1', (10 + Math.random() * 30).toFixed(0) + 'px');
+      el.style.setProperty('--dx2', (50 + Math.random() * 80).toFixed(0) + 'px');
+      el.style.setProperty('--dy2', (-10 - Math.random() * 30).toFixed(0) + 'px');
+      el.style.setProperty('--dx3', (-20 - Math.random() * 40).toFixed(0) + 'px');
+      el.style.setProperty('--dy3', (20 + Math.random() * 20).toFixed(0) + 'px');
+      el.style.left = (8 + Math.random() * 75).toFixed(0) + '%';
+      el.style.top = (8 + Math.random() * 75).toFixed(0) + '%';
+      el.style.opacity = 0.4 + Math.random() * 0.5;
+      el._role = role.key;
+      el._baseOpacity = parseFloat(el.style.opacity);
+      container.appendChild(el);
+      antEls.push(el);
+    }
+  });
+}
+
+function updateViewportAnts() {
+  const s = G;
+  antEls.forEach(el => {
+    const role = el._role;
+    const assigned = s.assigned[role] || 0;
+    const maxForRole = role === 'foragers' ? 8 : (role === 'excavators' ? 5 : 4);
+    const visible = role === 'foragers' ? Math.min(maxForRole, Math.ceil(assigned / 1.5))
+                  : role === 'excavators' ? Math.min(maxForRole, Math.ceil(assigned / 1))
+                  : Math.min(maxForRole, Math.ceil(assigned / 1));
+    const idx = antEls.filter(e => e._role === role).indexOf(el);
+    el.style.display = idx < visible ? 'block' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UI BUILDERS
+// ═══════════════════════════════════════════════════════════
+function buildAllocationUI() {
+  const container = document.getElementById('alloc-container');
+  const roles = [
+    { id: 'foragers', name: 'Foragers', cls: 'forager', produces: 'Food', iconDesc: 'Gathers leaves & fungus' },
+    { id: 'excavators', name: 'Excavators', cls: 'excavator', produces: 'Materials', iconDesc: 'Digs chitin & dirt' },
+    { id: 'soldiers', name: 'Soldiers', cls: 'soldier', produces: 'Security', iconDesc: 'Defends the colony' }
+  ];
+
+  container.innerHTML = roles.map(r => `
+    <div class="alloc-row" data-role="${r.id}">
+      <div class="alloc-icon ${r.cls}" title="${r.iconDesc}">
+        <span class="sprite-role ${r.id === 'foragers' ? 'forager' : r.id === 'excavators' ? 'excavator' : 'soldier'}" style="display:block;width:100%;height:100%;background-size:120px 80px;"></span>
+      </div>
+      <div class="alloc-body">
+        <div class="alloc-name">${r.name}</div>
+        <div class="alloc-preview" id="preview-${r.id}">${r.iconDesc}</div>
+      </div>
+      <button class="btn-stepper alloc-minus" data-role="${r.id}">−</button>
+      <span class="alloc-count" id="count-${r.id}">0</span>
+      <button class="btn-stepper alloc-plus" data-role="${r.id}">+</button>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.alloc-plus').forEach(b => {
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      changeAllocation(b.dataset.role, 1);
+      startHoldRepeat(b.dataset.role, 1);
+    });
+    b.addEventListener('pointerup', () => stopHoldRepeat());
+    b.addEventListener('pointerleave', () => stopHoldRepeat());
+    b.addEventListener('pointercancel', () => stopHoldRepeat());
+  });
+  container.querySelectorAll('.alloc-minus').forEach(b => {
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      changeAllocation(b.dataset.role, -1);
+      startHoldRepeat(b.dataset.role, -1);
+    });
+    b.addEventListener('pointerup', () => stopHoldRepeat());
+    b.addEventListener('pointerleave', () => stopHoldRepeat());
+    b.addEventListener('pointercancel', () => stopHoldRepeat());
+  });
+}
+
+let holdTimer = null;
+function startHoldRepeat(role, delta) {
+  stopHoldRepeat();
+  holdTimer = setInterval(() => changeAllocation(role, delta), 120);
+}
+function stopHoldRepeat() {
+  if (holdTimer) { clearInterval(holdTimer); holdTimer = null; }
+}
+
+function buildStanceUI() {
+  const container = document.getElementById('stance-buttons');
+  const stances = COMBAT_CONFIG.stances;
+  container.innerHTML = Object.keys(stances).map(key => {
+    const st = stances[key];
+    return `<button class="btn-stance" data-stance="${key}">${st.label}</button>`;
+  }).join('');
+
+  container.querySelectorAll('.btn-stance').forEach(b => {
+    b.addEventListener('click', () => {
+      G.combatStance = b.dataset.stance;
+      updateStanceUI();
+    });
+  });
+  updateStanceUI();
+}
+
+function updateStanceUI() {
+  const stance = COMBAT_CONFIG.stances[G.combatStance] || COMBAT_CONFIG.stances.balanced;
+  document.querySelectorAll('.btn-stance').forEach(b => {
+    b.classList.toggle('active', b.dataset.stance === G.combatStance);
+  });
+  const preview = document.getElementById('stance-preview');
+  if (preview) {
+    preview.textContent = `🛡️${(stance.major*100).toFixed(0)}% Majors · ⚔️${(stance.swarmer*100).toFixed(0)}% Swarmers · 🏹${(stance.spitter*100).toFixed(0)}% Spitters`;
+  }
+}
+
+function buildUpgradeUI() {
+  const container = document.getElementById('upgrade-container');
+  const ids = ['foodStorage', 'materialStorage', 'nursery', 'guardChamber'];
+  container.innerHTML = ids.map(id => {
+    const def = CONFIG.upgradeDefs[id];
+    return `
+      <div class="upgrade-card" data-upgrade="${id}">
+        <div class="upg-info">
+          <div class="upg-name-row">
+            <span class="upg-name">${def.name}</span>
+            <span class="upg-level" id="upg-level-${id}">Lv.0</span>
+          </div>
+          <div class="upg-desc">${def.desc}</div>
+          <div class="upg-benefit" id="upg-benefit-${id}"></div>
+        </div>
+        <button class="btn-upgrade" id="btn-upg-${id}">Cost: 0</button>
+      </div>
+    `;
+  }).join('');
+  ids.forEach(id => {
+    document.getElementById(`btn-upg-${id}`).addEventListener('click', () => purchaseUpgrade(id));
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════════════════
+function changeAllocation(role, delta) {
+  const maxAssignable = Math.floor(G.population.adults);
+  if (delta > 0 && totalAssigned(G) >= maxAssignable) return;
+  if (delta < 0 && G.assigned[role] <= 0) return;
+  G.assigned[role] = Math.max(0, G.assigned[role] + delta);
+  if (totalAssigned(G) > maxAssignable) {
+    G.assigned[role] = Math.max(0, G.assigned[role] - (totalAssigned(G) - maxAssignable));
+  }
+  updateUI();
+}
+
+function purchaseUpgrade(id) {
+  const level = getUpgradeLevel(G, id);
+  const def = CONFIG.upgradeDefs[id];
+  if (level >= def.levels) return;
+  const cost = upgradeCost(id, level);
+  if (G.resources.materials < cost) return;
+  G.resources.materials -= cost;
+  G.upgrades[id] = level + 1;
+  updateUI();
+}
+
+function resetGame() {
+  G = createInitialState();
+  initMapNodes(G);
+  G.session.lastTickTs = Date.now();
+  G.session.offlineApplied = true;
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  updateUI();
+  spawnViewportAnts();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UI UPDATE
+// ═══════════════════════════════════════════════════════════
+function updateUI() {
+  const s = G;
+  const rates = getNetRates(s);
+
+  // Resource header
+  document.getElementById('rh-food').textContent = Math.floor(s.resources.food);
+  document.getElementById('rh-mats').textContent = Math.floor(s.resources.materials);
+  document.getElementById('rh-sec').textContent = Math.floor(s.security);
+  document.getElementById('rh-pop').textContent = Math.floor(totalPop(s));
+
+  const foodRateEl = document.getElementById('rh-food-rate');
+  foodRateEl.textContent = (rates.netFood >= 0 ? '+' : '') + rates.netFood.toFixed(1) + '/s';
+  foodRateEl.className = 'rh-rate ' + (rates.netFood >= 0 ? 'pos' : 'neg');
+
+  const matsRateEl = document.getElementById('rh-mats-rate');
+  matsRateEl.textContent = '+' + rates.matsRate.toFixed(1) + '/s';
+  matsRateEl.className = 'rh-rate pos';
+
+  document.getElementById('rh-sec-rate').textContent = '+' + rates.secRate.toFixed(1) + '/s';
+
+  const idle = unassigned(s);
+  const popDetailEl = document.getElementById('rh-pop-detail');
+  popDetailEl.textContent = idle + ' idle';
+  popDetailEl.className = 'rh-rate ' + (idle > 0 ? 'pos' : '');
+
+  // Status strip
+  updateStatusStrip(s, rates);
+
+  // Allocation rows
+  const roleDefs = [
+    { id: 'foragers', perSec: CONFIG.foodPerForagerPerSec, unit: 'Food' },
+    { id: 'excavators', perSec: CONFIG.matsPerExcavatorPerSec, unit: 'Mats' },
+    { id: 'soldiers', perSec: CONFIG.secPerSoldierPerSec * securityMultiplier(s), unit: 'Sec' }
+  ];
+
+  roleDefs.forEach(rd => {
+    const countEl = document.getElementById('count-' + rd.id);
+    const previewEl = document.getElementById('preview-' + rd.id);
+    if (countEl) countEl.textContent = s.assigned[rd.id];
+    if (previewEl) {
+      const total = (s.assigned[rd.id] * rd.perSec).toFixed(1);
+      const upkeepNote = rd.id === 'foragers'
+        ? `<br><span class="neg">−${(s.population.adults * CONFIG.foodUpkeepPerAntPerSec * (1 + (getPrestigeModifiers().foodUpkeep || 0))).toFixed(1)}/s upkeep</span>`
+        : '';
+      previewEl.innerHTML = `Each: <span class="amt pos">+${rd.perSec.toFixed(2)} ${rd.unit}/s</span> · Total: <span class="amt pos">+${total}/s</span>${upkeepNote}`;
+    }
+  });
+
+  // Stepper states
+  document.querySelectorAll('.alloc-plus').forEach(b => {
+    b.disabled = totalAssigned(s) >= Math.floor(s.population.adults);
+  });
+  document.querySelectorAll('.alloc-minus').forEach(b => {
+    b.disabled = s.assigned[b.dataset.role] <= 0;
+  });
+
+  // Upgrades
+  ['foodStorage', 'materialStorage', 'nursery', 'guardChamber'].forEach(id => {
+    const level = getUpgradeLevel(s, id);
+    const def = CONFIG.upgradeDefs[id];
+    const cost = upgradeCost(id, level);
+    const btn = document.getElementById('btn-upg-' + id);
+    const lvlEl = document.getElementById('upg-level-' + id);
+    const benEl = document.getElementById('upg-benefit-' + id);
+    const card = document.querySelector(`.upgrade-card[data-upgrade="${id}"]`);
+
+    if (lvlEl) lvlEl.textContent = `Lv.${level}/${def.levels}`;
+
+    const canAfford = s.resources.materials >= cost;
+    const isMaxed = level >= def.levels;
+
+    if (benEl) {
+      if (id === 'foodStorage' || id === 'materialStorage') {
+        const capKey = id === 'foodStorage' ? 'food' : 'materials';
+        const currentCap = s.caps[capKey];
+        const nextCap = currentCap + def.effect.capBonus;
+        benEl.textContent = isMaxed ? `Cap: ${currentCap} (max)` : `Cap: ${currentCap} → ${nextCap}`;
+      } else if (id === 'nursery') {
+        const mult = growthMultiplier(s);
+        const nextMult = mult + def.effect.growthMult;
+        benEl.textContent = isMaxed ? `Growth: ${mult.toFixed(2)}x (max)` : `Growth: ${mult.toFixed(2)}x → ${nextMult.toFixed(2)}x`;
+      } else if (id === 'guardChamber') {
+        const mult = securityMultiplier(s);
+        const nextMult = mult + def.effect.securityMult;
+        benEl.textContent = isMaxed ? `Security: ${mult.toFixed(2)}x (max)` : `Security: ${mult.toFixed(2)}x → ${nextMult.toFixed(2)}x`;
+      }
+    }
+
+    if (btn) {
+      btn.disabled = isMaxed || !canAfford;
+      btn.textContent = isMaxed ? 'Maxed' : `Cost: ${cost}`;
+      btn.className = 'btn-upgrade' + (!isMaxed && canAfford ? ' ready' : '');
+    }
+    if (card) {
+      card.classList.toggle('affordable', !isMaxed && canAfford);
+    }
+  });
+
+  // Speed buttons
+  document.querySelectorAll('.bb-btn[data-speed]').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.speed) === speed);
+  });
+
+  // Viewport ants
+  updateViewportAnts();
+  updateStanceUI();
+  updatePrestigeTracker();
+
+  // Map rendering — skip during combat
+  if (activeTab === 'map' && !G.combat) {
+    renderMapViewport();
+    renderMapDeck();
+  }
+}
+
+function updateStatusStrip(s, rates) {
+  const strip = document.getElementById('status-strip');
+  const icon = document.getElementById('ss-icon');
+  const text = document.getElementById('ss-text');
+  const hint = document.getElementById('ss-hint');
+
+  let status = s.status;
+  const hasBreached = MAP_CONFIG.mapNodes.some(nd => s.map.nodes[nd.id] && s.map.nodes[nd.id].state === 'breached');
+  const hasThreatened = MAP_CONFIG.mapNodes.some(nd => s.map.nodes[nd.id] && s.map.nodes[nd.id].state === 'threatened');
+
+  strip.className = hasBreached ? 'starving' : (hasThreatened ? 'hungry' : s.status);
+
+  const states = {
+    stable:   { icon: '●', text: 'Colony is stable' },
+    hungry:   { icon: '◉', text: 'Food running low — growth slowed' },
+    starving: { icon: '⬤', text: 'STARVATION — growth halted' },
+    capped:   { icon: '■', text: 'Storage full — upgrade caps' },
+    growing:  { icon: '◆', text: 'Larvae developing — colony growing' }
+  };
+
+  if (hasBreached) {
+    icon.textContent = '💀'; text.textContent = 'SUPPLY LINE BREACHED — node rewards lost';
+  } else if (hasThreatened) {
+    icon.textContent = '⚠️'; text.textContent = 'Supply lines strained — assign more Soldiers';
+  } else {
+    const st = states[status] || states.stable;
+    icon.textContent = st.icon;
+    text.textContent = st.text;
+  }
+
+  // Suggested action
+  const idle = unassigned(s);
+  const affordableUpgrade = ['foodStorage','materialStorage','nursery','guardChamber'].some(id => {
+    const lv = getUpgradeLevel(s, id);
+    return lv < CONFIG.upgradeDefs[id].levels && s.resources.materials >= upgradeCost(id, lv);
+  });
+
+  const hasScoutable = MAP_CONFIG.mapNodes.some(nd => s.map.nodes[nd.id] && s.map.nodes[nd.id].state === 'scoutable');
+  const hasRevealed = MAP_CONFIG.mapNodes.some(nd => s.map.nodes[nd.id] && s.map.nodes[nd.id].state === 'revealed');
+
+  if (hasBreached) {
+    hint.textContent = '⚠️ Supply line breached! Open Map';
+  } else if (hasThreatened) {
+    hint.textContent = 'Supply lines strained — assign Soldiers';
+  } else if (s.status === 'starving') {
+    hint.textContent = 'Assign more Foragers';
+  } else if (s.status === 'hungry') {
+    hint.textContent = idle > 0 ? 'Assign idle to Foragers' : 'Consider more Foragers';
+  } else if (hasRevealed || hasScoutable) {
+    hint.textContent = 'New territory available on Map';
+  } else if (affordableUpgrade && s.status === 'capped') {
+    hint.textContent = 'Buy storage upgrade';
+  } else if (affordableUpgrade) {
+    hint.textContent = 'Upgrade available';
+  } else if (idle > 2) {
+    hint.textContent = idle + ' ants idle';
+  } else {
+    hint.textContent = '';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ONBOARDING
+// ═══════════════════════════════════════════════════════════
+const ONBOARD_STEPS = [
+  {
+    icon: '🐜', title: 'Welcome, Hive Mind',
+    body: 'You control the colony through pheromone signals. Assign workers to roles and watch your colony grow.'
+  },
+  {
+    icon: '🍃', title: 'Foragers Gather Food',
+    body: 'Tap + on the Foragers row to send ants gathering leaves. More Foragers means more Food — but every ant eats, so keep an eye on the net rate.'
+  },
+  {
+    icon: '⛏️', title: 'Excavators Collect Materials',
+    body: 'Assign Excavators to dig up chitin and dirt. Materials are spent on nest upgrades — the engine of your colony\'s progress.'
+  },
+  {
+    icon: '🛡️', title: 'Soldiers Provide Security',
+    body: 'Soldiers generate Security. For now this is a passive score. In future milestones, Security will determine your colony\'s survival in combat.'
+  },
+  {
+    icon: '📦', title: 'Upgrade Your Nest',
+    body: 'Scroll down to Nest Upgrades. Spend Materials to increase storage caps, speed up growth, and strengthen your guard. Affordable upgrades glow gold.'
+  }
+];
+let onboardStep = 0;
+
+function showOnboarding() {
+  onboardStep = 0;
+  document.getElementById('onboard-overlay').classList.remove('hidden');
+  renderOnboardStep();
+}
+
+function renderOnboardStep() {
+  const step = ONBOARD_STEPS[onboardStep];
+  document.getElementById('onboard-icon').textContent = step.icon;
+  document.getElementById('onboard-title').textContent = step.title;
+  document.getElementById('onboard-body').textContent = step.body;
+
+  const dots = document.getElementById('onboard-steps');
+  dots.innerHTML = ONBOARD_STEPS.map((_, i) =>
+    `<div class="onb-dot${i === onboardStep ? ' active' : ''}"></div>`
+  ).join('');
+
+  const btn = document.getElementById('onboard-btn');
+  btn.textContent = onboardStep < ONBOARD_STEPS.length - 1 ? 'Next' : 'Start Playing';
+}
+
+function advanceOnboarding() {
+  onboardStep++;
+  if (onboardStep >= ONBOARD_STEPS.length) {
+    document.getElementById('onboard-overlay').classList.add('hidden');
+    localStorage.setItem(ONBOARD_KEY, '1');
+    return;
+  }
+  renderOnboardStep();
+}
+
+function skipOnboarding() {
+  document.getElementById('onboard-overlay').classList.add('hidden');
+  localStorage.setItem(ONBOARD_KEY, '1');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════════
+function toggleSettings() {
+  const overlay = document.getElementById('settings-overlay');
+  const hidden = overlay.classList.toggle('hidden');
+  if (!hidden) applySettingsToDOM();
+}
+
+function applySettingsToDOM() {
+  document.getElementById('set-audio').classList.toggle('on', settings.audio);
+  document.getElementById('set-haptics').classList.toggle('on', settings.haptics);
+  document.getElementById('set-reduced-motion').classList.toggle('on', settings.reducedMotion);
+  document.querySelectorAll('.vp-ant').forEach(el => {
+    el.classList.toggle('reduced', settings.reducedMotion);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GAME LOOP
+// ═══════════════════════════════════════════════════════════
+function gameLoop(timestamp) {
+  if (lastFrameTs === 0) lastFrameTs = timestamp;
+  let rawDt = (timestamp - lastFrameTs) / 1000;
+  lastFrameTs = timestamp;
+  rawDt = Math.min(rawDt, 1.0);
+  const effectiveDt = rawDt * speed;
+
+  if (effectiveDt > 0) {
+    tick(G, effectiveDt);
+    tickCombat(rawDt);
+    enforceAssignmentLimits(G);
+    updateUI();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EVENT BINDINGS
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.bb-btn[data-speed]').forEach(b => {
+  b.addEventListener('click', () => { speed = parseInt(b.dataset.speed, 10); updateUI(); });
+});
+
+document.getElementById('btn-settings').addEventListener('click', toggleSettings);
+document.querySelectorAll('.tab-btn').forEach(b => {
+  b.addEventListener('click', () => switchTab(b.dataset.tab));
+});
+document.getElementById('btn-close-settings').addEventListener('click', toggleSettings);
+document.getElementById('btn-cancel-combat').addEventListener('click', closeCombatOverlay);
+document.getElementById('btn-confirm-combat').addEventListener('click', startCombat);
+document.getElementById('btn-close-results').addEventListener('click', closeCombatOverlay);
+document.getElementById('btn-nuptial').addEventListener('click', showPrestigeModal);
+document.getElementById('settings-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) toggleSettings();
+});
+
+document.getElementById('set-audio').addEventListener('click', () => {
+  settings.audio = !settings.audio;
+  saveSettings();
+  applySettingsToDOM();
+});
+document.getElementById('set-haptics').addEventListener('click', () => {
+  settings.haptics = !settings.haptics;
+  saveSettings();
+  applySettingsToDOM();
+});
+document.getElementById('set-reduced-motion').addEventListener('click', () => {
+  settings.reducedMotion = !settings.reducedMotion;
+  saveSettings();
+  applySettingsToDOM();
+});
+
+document.getElementById('btn-reset-from-settings').addEventListener('click', () => {
+  if (confirm('Reset all progress? This cannot be undone.')) {
+    resetGame();
+    toggleSettings();
+  }
+});
+
+document.getElementById('onboard-btn').addEventListener('click', advanceOnboarding);
+document.getElementById('onboard-skip').addEventListener('click', skipOnboarding);
+
+// Auto-save
+setInterval(() => saveGame(), 5000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
+window.addEventListener('beforeunload', () => saveGame());
+
+// ═══════════════════════════════════════════════════════════
+//  STARTUP
+// ═══════════════════════════════════════════════════════════
+buildAllocationUI();
+buildStanceUI();
+buildUpgradeUI();
+initGame();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
