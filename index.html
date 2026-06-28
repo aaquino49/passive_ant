@@ -48,45 +48,70 @@
     margin: 0 auto;
   }
 
-  /* ── Nest Viewport (40%) ── */
+  /* ── Nest Viewport (25%) — simple state-driven colony scene ── */
   #viewport {
-    flex: 0 0 40%;
+    flex: 0 0 25%;
     position: relative;
     overflow: hidden;
     border-bottom: 2px solid var(--border);
-    background: #1a1a0f;
+    background: linear-gradient(#241d12, #15100a);
   }
-  #viewport-bg {
-    position: absolute;
-    inset: 0;
-    background: url('assets/bg_nest_cross_section.png') center/cover no-repeat;
-    opacity: 0.85;
+  #colony-scene {
+    position: absolute; inset: 0;
+    display: flex;
+    gap: 5px;
+    padding: 6px;
   }
-  #viewport-ants {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
+  .cz {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    border-radius: var(--radius);
+    background: rgba(0,0,0,0.22);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: border-color 0.4s;
   }
-  .vp-ant {
+  .cz-pen { position: relative; flex: 1; overflow: hidden; }
+  .cz-mini {
     position: absolute;
-    width: 28px; height: 28px;
-    background-size: 448px 448px;
     image-rendering: pixelated;
-    animation: antWander var(--dur) var(--delay) infinite alternate ease-in-out;
-    opacity: 0.9;
+    animation: antBob 2.4s ease-in-out infinite alternate;
   }
-  .vp-ant.forager  { background-image: url('assets/ant_worker_forager_sheet.png'); background-position: 0 0; }
-  .vp-ant.excavator{ background-image: url('assets/ant_excavator_sheet.png'); background-position: 0 0; }
-  .vp-ant.soldier  { background-image: url('assets/ant_soldier_sheet.png'); background-position: 0 0; }
-
-  @keyframes antWander {
-    0%   { transform: translate(0, 0) scaleX(1); }
-    25%  { transform: translate(var(--dx1), var(--dy1)) scaleX(1); }
-    50%  { transform: translate(var(--dx2), var(--dy2)) scaleX(-1); }
-    75%  { transform: translate(var(--dx3), var(--dy3)) scaleX(-1); }
-    100% { transform: translate(0, 0) scaleX(1); }
+  .cz-mini.reduced { animation: none; }
+  .cz-mini.forager   { width: 18px; height: 18px; background: url('assets/ant_worker_forager_sheet.png') 0 0 / 288px 288px; }
+  .cz-mini.excavator { width: 18px; height: 18px; background: url('assets/ant_excavator_sheet.png') 0 0 / 288px 288px; }
+  .cz-mini.soldier   { width: 18px; height: 18px; background: url('assets/ant_soldier_sheet.png') 0 0 / 288px 288px; }
+  .cz-mini.larva     { width: 12px; height: 12px; background: url('assets/ant_larvae_sheet.png') 0 0 / 192px 192px; }
+  @keyframes antBob {
+    0%   { transform: translateY(0) scaleX(var(--fx, 1)); }
+    100% { transform: translateY(-2px) scaleX(var(--fx, 1)); }
   }
-  .vp-ant.reduced { animation: none; }
+  .cz-label {
+    flex-shrink: 0;
+    display: flex; align-items: baseline; justify-content: center; gap: 4px;
+    padding: 2px 0 3px;
+    background: rgba(0,0,0,0.38);
+    line-height: 1.1;
+  }
+  .cz-name { font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); }
+  .cz-n {
+    font-size: 13px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
+    color: var(--text);
+  }
+  /* status accents the chamber borders */
+  #colony-scene.st-growing  .cz { border-color: #3a6a30; }
+  #colony-scene.st-stable   .cz { border-color: #3a5a20; }
+  #colony-scene.st-hungry   .cz { border-color: #8a6a20; }
+  #colony-scene.st-starving .cz { border-color: #8a3020; }
+  #colony-scene.st-capped   .cz { border-color: #6a5a20; }
+  .cz-combat-flash {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(212,74,58,0.45) 0%, transparent 65%);
+    animation: czFlash 0.5s ease-out forwards;
+  }
+  @keyframes czFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
 
   /* ── Control Deck (60%) ── */
   #deck {
@@ -1096,179 +1121,14 @@
     50%     { transform: translateY(-6px); }
   }
 
-  /* ── Immersive Viewport (R6) ── */
-  #viewport { overflow: hidden; }
-
-  /* Chamber glow — highlights chambers based on upgrade levels */
-  .chamber-glow {
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-    transition: opacity 0.5s, box-shadow 0.5s;
-  }
-  .chamber-glow.nursery-glow   { left: 5%;  top: 55%; width: 40%; height: 35%; }
-  .chamber-glow.storage-glow   { left: 50%; top: 55%; width: 45%; height: 35%; }
-  .chamber-glow.guard-glow     { left: 20%; top: 20%; width: 45%; height: 30%; }
-
-  /* Larvae cluster */
-  .vp-larvae-cluster {
-    position: absolute; left: 8%; top: 62%; width: 34%; height: 24%;
-    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center;
-    gap: 1px; pointer-events: none;
-  }
-  .larva-dot {
-    width: 4px; height: 2.5px;
-    background: #e8d8a0;
-    border-radius: 50%;
-    animation: larvaWiggle 2s ease-in-out infinite;
-    opacity: 0;
-    transition: opacity 0.5s;
-  }
-  @keyframes larvaWiggle {
-    0%,100% { transform: translateY(0) scaleX(1); }
-    50%     { transform: translateY(-1px) scaleX(1.15); }
-  }
-  .vp-larvae-cluster.reduced .larva-dot { animation: none; }
-
-  /* Stockpile indicators */
-  .stockpile-indicator {
-    position: absolute;
-    pointer-events: none;
-    transition: transform 0.5s, opacity 0.5s;
-  }
-  .stockpile-food {
-    left: 55%; top: 68%;
-    width: 20px; height: 20px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .stockpile-food .pile-icon {
-    font-size: 14px;
-    transition: font-size 0.3s;
-  }
-  .stockpile-mats {
-    left: 72%; top: 68%;
-    width: 20px; height: 20px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .stockpile-mats .pile-icon {
-    font-size: 14px;
-    transition: font-size 0.3s;
-  }
-
-  /* FX layer */
-  .vp-fx-layer { position: absolute; inset: 0; pointer-events: none; }
-  .vp-combat-flash {
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 65% 40%, rgba(200,60,30,0.5) 0%, transparent 60%);
-    animation: combatFlash 0.4s ease-out forwards;
-    pointer-events: none;
-  }
-  .vp-combat-flash.reduced { animation: none; display: none; }
-  @keyframes combatFlash {
-    0%   { opacity: 1; }
-    100% { opacity: 0; }
-  }
-  .vp-starving-pulse {
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 55% 68%, rgba(180,60,40,0.2) 0%, transparent 50%);
-    animation: starvingPulse 2s ease-in-out infinite;
-    pointer-events: none;
-  }
-  .vp-starving-pulse.reduced { animation: none; }
-  @keyframes starvingPulse {
-    0%,100% { opacity: 0.3; }
-    50%     { opacity: 0.7; }
-  }
-
-  /* Particles — dust motes */
-  .vp-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-  .dust-mote {
-    position: absolute;
-    width: 2px; height: 2px;
-    background: #c8c0a0;
-    border-radius: 50%;
-    animation: dustDrift linear infinite;
-    opacity: 0;
-  }
-  @keyframes dustDrift {
-    0%   { transform: translate(0, 0); opacity: 0; }
-    10%  { opacity: 0.6; }
-    80%  { opacity: 0.5; }
-    100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
-  }
-  .vp-particles.reduced .dust-mote { animation: none; display: none; }
-
-  /* Vignette */
-  .vp-vignette {
-    position: absolute; inset: 0;
-    pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.45) 100%);
-  }
-
-  /* Day/night cycle overlay */
-  .vp-daynight {
-    position: absolute; inset: 0;
-    pointer-events: none;
-    transition: background 3s linear;
-    mix-blend-mode: multiply;
-  }
-
-  /* Camera drift on viewport */
-  .vp-camera-drift {
-    animation: cameraDrift 20s ease-in-out infinite;
-  }
-  .vp-camera-drift.reduced { animation: none; }
-  @keyframes cameraDrift {
-    0%   { transform: translate(0, 0); }
-    25%  { transform: translate(1%, 0.5%); }
-    50%  { transform: translate(0.5%, 1%); }
-    75%  { transform: translate(-0.5%, 0.5%); }
-    100% { transform: translate(0, 0); }
-  }
-
-  /* State-driven ant styles (enhanced) */
-  .vp-ant.larvae-scout {
-    background-image: url('assets/ant_larvae_sheet.png');
-    width: 14px; height: 14px;
-    background-size: 224px 224px;
-    animation: larvaCrawl 3s var(--delay) infinite alternate ease-in-out;
-  }
-  @keyframes larvaCrawl {
-    0%   { transform: translate(0, 0); }
-    100% { transform: translate(var(--dx1), var(--dy1)); }
-  }
-  .vp-ant.larvae-scout.reduced { animation: none; }
-
-  /* Nursery hatch pulse */
-  .hatch-pulse {
-    position: absolute; left: 14%; top: 72%;
-    width: 20px; height: 10px;
-    background: radial-gradient(ellipse, rgba(232,216,160,0.6) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-    animation: hatchPulse 0.5s ease-out forwards;
-  }
-  .hatch-pulse.reduced { animation: none; display: none; }
-  @keyframes hatchPulse {
-    0%   { transform: scale(0); opacity: 1; }
-    100% { transform: scale(3); opacity: 0; }
-  }
+  /* (legacy immersive-viewport styles removed — replaced by #colony-scene above) */
 </style>
 </head>
 <body>
 <div id="app">
-  <!-- 40% Viewport -->
+  <!-- 25% Colony Viewport -->
   <div id="viewport">
-    <div id="viewport-bg"></div>
-    <div id="viewport-chambers" style="position:absolute;inset:0;background:url('assets/tiles_nest_chambers.png') center/cover;image-rendering:pixelated;opacity:0.25;mix-blend-mode:overlay;pointer-events:none;"></div>
-    <div id="viewport-ants"></div>
-    <div id="viewport-larvae" class="vp-larvae-cluster"></div>
-    <div id="viewport-stockpiles"></div>
-    <div id="viewport-fx" class="vp-fx-layer"></div>
-    <div id="viewport-particles" class="vp-particles"></div>
-    <div id="viewport-vignette" class="vp-vignette"></div>
-    <div id="viewport-daynight" class="vp-daynight"></div>
-    <div id="viewport-chamber-glow"></div>
+    <div id="colony-scene"></div>
     <div id="map-viewport">
       <svg id="map-svg"></svg>
     </div>
@@ -2152,8 +2012,7 @@ function switchTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.getElementById('map-viewport').classList.toggle('active', tab === 'map');
-  document.getElementById('viewport-bg').style.display = tab === 'map' ? 'none' : '';
-  document.getElementById('viewport-ants').style.display = tab === 'map' ? 'none' : '';
+  document.getElementById('colony-scene').style.display = tab === 'map' ? 'none' : '';
   document.getElementById('nest-deck-content').classList.toggle('hidden', tab === 'map');
   document.getElementById('map-deck').classList.toggle('active', tab === 'map');
   if (tab === 'map') { renderMapViewport(); renderMapDeck(); }
@@ -2314,7 +2173,7 @@ function startCombat() {
   addCombatEvent('neutral', `Engaging ${calc.enemy.name}...`);
 
   document.getElementById('battle-stage').classList.remove('battle-shake');
-  triggerCombatFlash();
+  pulseColonyScene();
 }
 
 function addCombatEvent(type, msg) {
@@ -2425,7 +2284,7 @@ function finishCombat() {
   c.active = false;
   c.phase = 'resolved';
 
-  triggerCombatFlash();
+  pulseColonyScene();
 
   const s = G;
   const nodeId = c.nodeId;
@@ -2748,7 +2607,7 @@ function executePrestige() {
   saveGame();
   updateUI();
   renderMapViewport();
-  spawnViewportAnts();
+  buildColonyScene();
 }
 
 function closePrestigeModal() {
@@ -2845,8 +2704,7 @@ function initGame() {
   applySettingsToDOM();
   lastFrameTs = performance.now();
   updateUI();
-  spawnViewportAnts();
-  initCameraDrift();
+  buildColonyScene();
   if (!localStorage.getItem(ONBOARD_KEY)) showOnboarding();
 }
 
@@ -2874,242 +2732,90 @@ function enforceAssignmentLimits(s) {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  VIEWPORT ANTS (State-driven, R6)
+//  COLONY SCENE (simple, state-driven)
+//  Four chambers — Foragers / Excavators / Soldiers / Larvae —
+//  show live mini-sprites whose count tracks real game state.
 // ═══════════════════════════════════════════════════════════
-let antEls = [];
-const MAX_VP_ANTS = 17;
+const CZ_CAP = 8, CZ_LARVA_CAP = 12;
+const COLONY_ZONES = [
+  { key: 'foragers',   cls: 'forager',   name: 'Foragers' },
+  { key: 'excavators', cls: 'excavator', name: 'Excavators' },
+  { key: 'soldiers',   cls: 'soldier',   name: 'Soldiers' },
+  { key: 'larvae',     cls: 'larva',     name: 'Larvae' },
+];
+let czRefs = null;
 
-function spawnViewportAnts() {
-  const container = document.getElementById('viewport-ants');
-  container.innerHTML = '';
-  antEls = [];
-  for (let i = 0; i < MAX_VP_ANTS; i++) {
-    const el = document.createElement('div');
-    el.className = 'vp-ant';
-    el.style.setProperty('--dur', (6 + Math.random() * 8).toFixed(1) + 's');
-    el.style.setProperty('--delay', (Math.random() * -10).toFixed(1) + 's');
-    el.style.setProperty('--dx1', (30 + Math.random() * 60).toFixed(0) + 'px');
-    el.style.setProperty('--dy1', (10 + Math.random() * 30).toFixed(0) + 'px');
-    el.style.setProperty('--dx2', (50 + Math.random() * 80).toFixed(0) + 'px');
-    el.style.setProperty('--dy2', (-10 - Math.random() * 30).toFixed(0) + 'px');
-    el.style.setProperty('--dx3', (-20 - Math.random() * 40).toFixed(0) + 'px');
-    el.style.setProperty('--dy3', (20 + Math.random() * 20).toFixed(0) + 'px');
-    el.style.left = (8 + Math.random() * 75).toFixed(0) + '%';
-    el.style.top = (8 + Math.random() * 75).toFixed(0) + '%';
-    el.style.opacity = 0;
-    el.style.display = 'none';
-    el._role = null;
-    container.appendChild(el);
-    antEls.push(el);
-  }
-}
-
-function updateViewportAnts() {
-  const s = G;
-  const roles = ['foragers', 'excavators', 'soldiers'];
-  const roleCls = { foragers: 'forager', excavators: 'excavator', soldiers: 'soldier' };
-  const totalAssignedS = totalAssigned(s);
-
-  let ptr = 0;
-
-  roles.forEach(role => {
-    const count = s.assigned[role] || 0;
-    const toShow = Math.min(count, Math.ceil(MAX_VP_ANTS * (count / Math.max(1, totalAssignedS || 1))));
-    for (let i = 0; i < toShow && ptr < MAX_VP_ANTS; i++, ptr++) {
-      const el = antEls[ptr];
-      el.className = 'vp-ant ' + roleCls[role];
-      el._role = role;
-      el.style.display = 'block';
-      el.style.opacity = 0.5 + Math.random() * 0.4;
-      if (settings.reducedMotion) el.classList.add('reduced');
+// Build the four chambers once, pre-spawning a pool of hidden mini-sprites
+// so per-frame updates only toggle visibility (keeps CSS animations alive).
+function buildColonyScene() {
+  const scene = document.getElementById('colony-scene');
+  if (!scene) return;
+  scene.innerHTML = '';
+  czRefs = [];
+  COLONY_ZONES.forEach(z => {
+    const isLarvae = z.key === 'larvae';
+    const cap = isLarvae ? CZ_LARVA_CAP : CZ_CAP;
+    const perRow = isLarvae ? 5 : 4;
+    const cz = document.createElement('div');
+    cz.className = 'cz';
+    const pen = document.createElement('div');
+    pen.className = 'cz-pen';
+    const minis = [];
+    for (let i = 0; i < cap; i++) {
+      const m = document.createElement('div');
+      m.className = 'cz-mini ' + z.cls;
+      const col = i % perRow, row = Math.floor(i / perRow);
+      m.style.left = (isLarvae ? 8 + col * 18 : 10 + col * 22) + '%';
+      m.style.top  = (isLarvae ? 26 + row * 30 : 14 + row * 40) + '%';
+      m.style.setProperty('--fx', (i % 2) ? -1 : 1);
+      m.style.animationDelay = (i * 0.18).toFixed(2) + 's';
+      m.style.display = 'none';
+      pen.appendChild(m);
+      minis.push(m);
     }
+    const label = document.createElement('div');
+    label.className = 'cz-label';
+    label.innerHTML = `<span class="cz-name">${z.name}</span><span class="cz-n">0</span>`;
+    cz.appendChild(pen);
+    cz.appendChild(label);
+    scene.appendChild(cz);
+    czRefs.push({ key: z.key, minis, nEl: label.querySelector('.cz-n') });
   });
-
-  // Add a few idle/wandering ants only if population is non-trivial
-  const idleShown = ptr;
-
-  for (let i = ptr; i < MAX_VP_ANTS; i++) {
-    const el = antEls[i];
-    el.style.display = 'none';
-    el.style.opacity = 0;
-    el._role = null;
-  }
-
-  // Ambient wandering ants when low population
-  if (idleShown < 3) {
-    const starterRoles = ['foragers', 'excavators', 'soldiers'];
-    for (let i = idleShown; i < Math.min(3, MAX_VP_ANTS); i++) {
-      const el = antEls[i];
-      const role = starterRoles[i % 3];
-      el.className = 'vp-ant ' + roleCls[role];
-      el._role = role;
-      el.style.display = 'block';
-      el.style.opacity = 0.2 + Math.random() * 0.2;
-      if (settings.reducedMotion) el.classList.add('reduced');
-    }
-  }
+  applyReducedMotionToViewport();
 }
 
-// ═══════════════════════════════════════════════════════════
-//  IMMERSIVE VIEWPORT EFFECTS (R6)
-// ═══════════════════════════════════════════════════════════
-
-/* Chamber glow based on upgrade levels */
-function updateChamberGlow() {
-  const container = document.getElementById('viewport-chamber-glow');
-  const upgrades = [
-    { id: 'nursery', cls: 'nursery-glow', color: 'rgba(232,216,160,0.3)' },
-    { id: 'foodStorage', cls: 'storage-glow', color: 'rgba(122,182,72,0.25)' },
-    { id: 'guardChamber', cls: 'guard-glow', color: 'rgba(200,84,74,0.2)' }
-  ];
-  container.innerHTML = upgrades.map(u => {
-    const lv = getUpgradeLevel(G, u.id);
-    const maxLv = CONFIG.upgradeDefs[u.id].levels;
-    const intensity = lv / Math.max(1, maxLv);
-    const glow = intensity > 0 ? `0 0 ${8 + intensity * 20}px ${u.color}` : 'none';
-    return `<div class="chamber-glow ${u.cls}" style="box-shadow:${glow};opacity:${intensity}"></div>`;
-  }).join('');
+// Per-frame: tint borders by colony status and show the right number of ants.
+function renderColonyScene() {
+  const s = G;
+  const scene = document.getElementById('colony-scene');
+  if (!scene) return;
+  if (!czRefs) buildColonyScene();
+  scene.classList.remove('st-stable', 'st-growing', 'st-hungry', 'st-starving', 'st-capped');
+  scene.classList.add('st-' + (s.status || 'stable'));
+  czRefs.forEach(ref => {
+    const count = ref.key === 'larvae'
+      ? Math.floor(s.population.larvae)
+      : Math.floor(s.assigned[ref.key] || 0);
+    const cap = ref.minis.length;
+    const show = Math.min(count, cap);
+    for (let i = 0; i < cap; i++) ref.minis[i].style.display = i < show ? 'block' : 'none';
+    ref.nEl.textContent = count;
+  });
 }
 
-/* Larvae cluster */
-function updateViewportLarvae() {
-  const container = document.getElementById('viewport-larvae');
-  const larvae = G.population.larvae;
-  const maxShow = 24;
-  const show = Math.min(larvae, maxShow);
-  let html = '';
-  for (let i = 0; i < maxShow; i++) {
-    html += `<div class="larva-dot" style="opacity:${i < show ? 1 - (i / maxShow) * 0.5 : 0};animation-delay:${(i * 0.2).toFixed(1)}s"></div>`;
-  }
-  container.innerHTML = html;
-  if (settings.reducedMotion) container.classList.add('reduced');
-  else container.classList.remove('reduced');
-}
-
-/* Stockpile indicators */
-function updateViewportStockpiles() {
-  const container = document.getElementById('viewport-stockpiles');
-  const foodPct = G.caps.food > 0 ? G.resources.food / G.caps.food : 0;
-  const matsPct = G.caps.materials > 0 ? G.resources.materials / G.caps.materials : 0;
-
-  const foodSize = 10 + foodPct * 12;
-  const matsSize = 10 + matsPct * 12;
-  const starveEffect = G.status === 'starving' ? 'filter:grayscale(0.5) brightness(0.7);' : '';
-
-  container.innerHTML = `
-    <div class="stockpile-food" style="${starveEffect}">
-      <span class="pile-icon" style="font-size:${foodSize.toFixed(0)}px;opacity:${0.3 + foodPct * 0.7}">🍃</span>
-    </div>
-    <div class="stockpile-mats" style="${starveEffect}">
-      <span class="pile-icon" style="font-size:${matsSize.toFixed(0)}px;opacity:${0.3 + matsPct * 0.7}">🧱</span>
-    </div>
-  `;
-}
-
-/* Combat flash effect */
-function triggerCombatFlash() {
-  const fx = document.getElementById('viewport-fx');
-  const flash = document.createElement('div');
-  flash.className = 'vp-combat-flash';
-  if (settings.reducedMotion) flash.classList.add('reduced');
-  fx.appendChild(flash);
-  setTimeout(() => { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 500);
-}
-
-/* Status-driven viewportFX */
-function updateViewportStatusFX() {
-  const fx = document.getElementById('viewport-fx');
-  const existing = fx.querySelector('.vp-starving-pulse');
-  if (G.status === 'starving' && !existing) {
-    const pulse = document.createElement('div');
-    pulse.className = 'vp-starving-pulse';
-    if (settings.reducedMotion) pulse.classList.add('reduced');
-    fx.appendChild(pulse);
-  } else if (G.status !== 'starving' && existing) {
-    existing.remove();
-  }
-}
-
-/* Day/night cycle */
-let dayNightTimer = 0;
-function updateDayNight(dt) {
-  dayNightTimer += dt;
-  const cycleLen = 60;
-  const phase = (dayNightTimer % cycleLen) / cycleLen;
-  let bg;
-  if (phase < 0.3) bg = 'rgba(20,20,30,0.0)';
-  else if (phase < 0.4) bg = `rgba(20,20,30,${((phase - 0.3) / 0.1) * 0.15})`;
-  else if (phase < 0.8) bg = 'rgba(20,20,30,0.15)';
-  else if (phase < 0.9) bg = `rgba(20,20,30,${0.15 - ((phase - 0.8) / 0.1) * 0.15})`;
-  else bg = 'rgba(20,20,30,0.0)';
-  document.getElementById('viewport-daynight').style.background = bg;
-}
-
-/* Particle (dust motes) spawning */
-function spawnDustMotes() {
-  const container = document.getElementById('viewport-particles');
-  if (settings.reducedMotion) { container.innerHTML = ''; return; }
-  const count = 6;
-  for (let i = 0; i < count; i++) {
-    const mote = document.createElement('div');
-    mote.className = 'dust-mote';
-    mote.style.left = (10 + Math.random() * 80) + '%';
-    mote.style.top = (20 + Math.random() * 60) + '%';
-    mote.style.setProperty('--dx', ((Math.random() - 0.5) * 60) + 'px');
-    mote.style.setProperty('--dy', ((Math.random() - 0.5) * 40 - 10) + 'px');
-    mote.style.animationDuration = (6 + Math.random() * 8) + 's';
-    container.appendChild(mote);
-    mote.addEventListener('animationend', () => { if (mote.parentNode) mote.parentNode.removeChild(mote); }, { once: true });
-  }
-}
-
-/* Nursery hatch pulse */
-function triggerHatchPulse() {
-  const fx = document.getElementById('viewport-fx');
-  const pulse = document.createElement('div');
-  pulse.className = 'hatch-pulse';
-  if (settings.reducedMotion) pulse.classList.add('reduced');
-  fx.appendChild(pulse);
-  setTimeout(() => { if (pulse.parentNode) pulse.parentNode.removeChild(pulse); }, 600);
-}
-
-/* Camera drift setup */
-function initCameraDrift() {
-  const bg = document.getElementById('viewport-bg');
-  const chambers = document.getElementById('viewport-chambers');
-  bg.classList.add('vp-camera-drift');
-  chambers.classList.add('vp-camera-drift');
-}
-
-/* Full immersive update (called from game loop) */
-let dustMoteTimer = 0;
-let prevLarvae = 0;
-function updateViewportImmersive(dt) {
-  updateDayNight(dt);
-
-  dustMoteTimer += dt;
-  if (dustMoteTimer > 2) { dustMoteTimer = 0; spawnDustMotes(); }
-
-  const larvae = G.population.larvae;
-  if (larvae > prevLarvae && prevLarvae > 0) triggerHatchPulse();
-  prevLarvae = larvae;
-
-  updateViewportAnts();
-  updateViewportLarvae();
-  updateViewportStockpiles();
-  updateChamberGlow();
-  updateViewportStatusFX();
+// Brief red flash over the scene when combat is engaged.
+function pulseColonyScene() {
+  const scene = document.getElementById('colony-scene');
+  if (!scene || settings.reducedMotion) return;
+  const f = document.createElement('div');
+  f.className = 'cz-combat-flash';
+  scene.appendChild(f);
+  setTimeout(() => { if (f.parentNode) f.parentNode.removeChild(f); }, 500);
 }
 
 function applyReducedMotionToViewport() {
   const off = settings.reducedMotion;
-  document.querySelectorAll('.vp-ant').forEach(el => el.classList.toggle('reduced', off));
-  document.getElementById('viewport-particles').classList.toggle('reduced', off);
-  document.getElementById('viewport-larvae').classList.toggle('reduced', off);
-  document.querySelectorAll('.vp-camera-drift').forEach(el => el.classList.toggle('reduced', off));
-  document.querySelectorAll('.vp-starving-pulse').forEach(el => el.classList.toggle('reduced', off));
-  document.querySelectorAll('.vp-combat-flash').forEach(el => el.classList.toggle('reduced', off));
-  document.querySelectorAll('.hatch-pulse').forEach(el => el.classList.toggle('reduced', off));
+  document.querySelectorAll('.cz-mini').forEach(el => el.classList.toggle('reduced', off));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3253,7 +2959,7 @@ function resetGame() {
   G.session.offlineApplied = true;
   try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
   updateUI();
-  spawnViewportAnts();
+  buildColonyScene();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3364,12 +3070,8 @@ function updateUI() {
     b.classList.toggle('active', parseInt(b.dataset.speed) === speed);
   });
 
-  // Viewport
-  updateViewportAnts();
-  updateViewportLarvae();
-  updateViewportStockpiles();
-  updateChamberGlow();
-  updateViewportStatusFX();
+  // Colony scene
+  renderColonyScene();
   updateStanceUI();
   updatePrestigeTracker();
 
@@ -3538,12 +3240,6 @@ function gameLoop(timestamp) {
     enforceAssignmentLimits(G);
     updateUI();
   }
-
-  updateDayNight(rawDt);
-  dustMoteTimer += rawDt;
-  if (dustMoteTimer > 2) { dustMoteTimer = 0; spawnDustMotes(); }
-  if (G.population.larvae > prevLarvae && prevLarvae > 0) triggerHatchPulse();
-  prevLarvae = G.population.larvae;
 
   requestAnimationFrame(gameLoop);
 }
