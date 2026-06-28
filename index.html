@@ -97,9 +97,8 @@
   }
   #deck-scroll {
     flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 6px 8px 100px;
+    overflow: hidden;
+    padding: 6px 8px 8px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -288,32 +287,6 @@
   .btn-upgrade:active.ready { background: var(--amber); color: #111; }
   .btn-upgrade:disabled { opacity: 0.3; cursor: default; animation: none; }
 
-  /* ── Bottom Bar ── */
-  #bottom-bar {
-    flex-shrink: 0;
-    display: flex;
-    gap: 6px;
-    padding: 6px 8px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-  }
-  .bb-btn {
-    flex: 1;
-    padding: 8px 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
-    color: var(--text-dim);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    min-height: var(--tap);
-    text-align: center;
-    transition: background 0.1s, border-color 0.1s, color 0.1s;
-  }
-  .bb-btn.active { border-color: var(--amber); color: var(--amber); }
-  .bb-btn:active { background: var(--amber); color: #111; }
-
   /* ── Settings Modal ── */
   #settings-overlay {
     position: fixed; inset: 0;
@@ -429,6 +402,44 @@
   ::-webkit-scrollbar { width: 3px; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+  /* ── Top Bar (Speed + Settings) ── */
+  #top-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tb-btn {
+    flex: 1;
+    padding: 5px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+  }
+  .tb-btn.active { border-color: var(--amber); color: var(--amber); }
+  .tb-btn:active { background: var(--amber); color: #111; }
+  #btn-settings-tb {
+    flex: 0 0 var(--tap);
+    padding: 5px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  #btn-settings-tb:active { background: var(--amber); }
+
   /* ── Tab Bar ── */
   #tab-bar {
     flex-shrink: 0; display: flex; gap: 0;
@@ -444,6 +455,35 @@
   }
   .tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
   .tab-btn:active { background: var(--surface2); }
+
+  /* ── Nest Sub-Tabs ── */
+  #nest-sub-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .nest-sub-btn {
+    flex: 1;
+    padding: 7px 0;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nest-sub-btn.active {
+    background: var(--amber);
+    color: #111;
+  }
+  .nest-sub-btn:active { background: var(--amber); color: #111; }
+  .nest-panel { display: none; flex-direction: column; gap: 6px; flex: 1; min-height: 0; overflow-y: auto; }
+  .nest-panel.active { display: flex; }
 
   /* ── Map Viewport ── */
   #map-viewport {
@@ -472,7 +512,7 @@
   /* ── Map Deck ── */
   #map-deck { display: none; }
   #map-deck.active { display: flex; flex-direction: column; gap: 6px; }
-  #nest-deck-content { display: flex; flex-direction: column; gap: 6px; }
+  #nest-deck-content { display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
   #nest-deck-content.hidden { display: none; }
 
   .node-card {
@@ -1055,6 +1095,164 @@
     0%,100% { transform: translateY(0); }
     50%     { transform: translateY(-6px); }
   }
+
+  /* ── Immersive Viewport (R6) ── */
+  #viewport { overflow: hidden; }
+
+  /* Chamber glow — highlights chambers based on upgrade levels */
+  .chamber-glow {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    transition: opacity 0.5s, box-shadow 0.5s;
+  }
+  .chamber-glow.nursery-glow   { left: 5%;  top: 55%; width: 40%; height: 35%; }
+  .chamber-glow.storage-glow   { left: 50%; top: 55%; width: 45%; height: 35%; }
+  .chamber-glow.guard-glow     { left: 20%; top: 20%; width: 45%; height: 30%; }
+
+  /* Larvae cluster */
+  .vp-larvae-cluster {
+    position: absolute; left: 8%; top: 62%; width: 34%; height: 24%;
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center;
+    gap: 1px; pointer-events: none;
+  }
+  .larva-dot {
+    width: 4px; height: 2.5px;
+    background: #e8d8a0;
+    border-radius: 50%;
+    animation: larvaWiggle 2s ease-in-out infinite;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  @keyframes larvaWiggle {
+    0%,100% { transform: translateY(0) scaleX(1); }
+    50%     { transform: translateY(-1px) scaleX(1.15); }
+  }
+  .vp-larvae-cluster.reduced .larva-dot { animation: none; }
+
+  /* Stockpile indicators */
+  .stockpile-indicator {
+    position: absolute;
+    pointer-events: none;
+    transition: transform 0.5s, opacity 0.5s;
+  }
+  .stockpile-food {
+    left: 55%; top: 68%;
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .stockpile-food .pile-icon {
+    font-size: 14px;
+    transition: font-size 0.3s;
+  }
+  .stockpile-mats {
+    left: 72%; top: 68%;
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .stockpile-mats .pile-icon {
+    font-size: 14px;
+    transition: font-size 0.3s;
+  }
+
+  /* FX layer */
+  .vp-fx-layer { position: absolute; inset: 0; pointer-events: none; }
+  .vp-combat-flash {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 65% 40%, rgba(200,60,30,0.5) 0%, transparent 60%);
+    animation: combatFlash 0.4s ease-out forwards;
+    pointer-events: none;
+  }
+  .vp-combat-flash.reduced { animation: none; display: none; }
+  @keyframes combatFlash {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  .vp-starving-pulse {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 55% 68%, rgba(180,60,40,0.2) 0%, transparent 50%);
+    animation: starvingPulse 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .vp-starving-pulse.reduced { animation: none; }
+  @keyframes starvingPulse {
+    0%,100% { opacity: 0.3; }
+    50%     { opacity: 0.7; }
+  }
+
+  /* Particles — dust motes */
+  .vp-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .dust-mote {
+    position: absolute;
+    width: 2px; height: 2px;
+    background: #c8c0a0;
+    border-radius: 50%;
+    animation: dustDrift linear infinite;
+    opacity: 0;
+  }
+  @keyframes dustDrift {
+    0%   { transform: translate(0, 0); opacity: 0; }
+    10%  { opacity: 0.6; }
+    80%  { opacity: 0.5; }
+    100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+  }
+  .vp-particles.reduced .dust-mote { animation: none; display: none; }
+
+  /* Vignette */
+  .vp-vignette {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.45) 100%);
+  }
+
+  /* Day/night cycle overlay */
+  .vp-daynight {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    transition: background 3s linear;
+    mix-blend-mode: multiply;
+  }
+
+  /* Camera drift on viewport */
+  .vp-camera-drift {
+    animation: cameraDrift 20s ease-in-out infinite;
+  }
+  .vp-camera-drift.reduced { animation: none; }
+  @keyframes cameraDrift {
+    0%   { transform: translate(0, 0); }
+    25%  { transform: translate(1%, 0.5%); }
+    50%  { transform: translate(0.5%, 1%); }
+    75%  { transform: translate(-0.5%, 0.5%); }
+    100% { transform: translate(0, 0); }
+  }
+
+  /* State-driven ant styles (enhanced) */
+  .vp-ant.larvae-scout {
+    background-image: url('assets/ant_larvae_sheet.png');
+    width: 14px; height: 14px;
+    background-size: 224px 224px;
+    animation: larvaCrawl 3s var(--delay) infinite alternate ease-in-out;
+  }
+  @keyframes larvaCrawl {
+    0%   { transform: translate(0, 0); }
+    100% { transform: translate(var(--dx1), var(--dy1)); }
+  }
+  .vp-ant.larvae-scout.reduced { animation: none; }
+
+  /* Nursery hatch pulse */
+  .hatch-pulse {
+    position: absolute; left: 14%; top: 72%;
+    width: 20px; height: 10px;
+    background: radial-gradient(ellipse, rgba(232,216,160,0.6) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: hatchPulse 0.5s ease-out forwards;
+  }
+  .hatch-pulse.reduced { animation: none; display: none; }
+  @keyframes hatchPulse {
+    0%   { transform: scale(0); opacity: 1; }
+    100% { transform: scale(3); opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -1064,6 +1262,13 @@
     <div id="viewport-bg"></div>
     <div id="viewport-chambers" style="position:absolute;inset:0;background:url('assets/tiles_nest_chambers.png') center/cover;image-rendering:pixelated;opacity:0.25;mix-blend-mode:overlay;pointer-events:none;"></div>
     <div id="viewport-ants"></div>
+    <div id="viewport-larvae" class="vp-larvae-cluster"></div>
+    <div id="viewport-stockpiles"></div>
+    <div id="viewport-fx" class="vp-fx-layer"></div>
+    <div id="viewport-particles" class="vp-particles"></div>
+    <div id="viewport-vignette" class="vp-vignette"></div>
+    <div id="viewport-daynight" class="vp-daynight"></div>
+    <div id="viewport-chamber-glow"></div>
     <div id="map-viewport">
       <svg id="map-svg"></svg>
     </div>
@@ -1094,13 +1299,23 @@
       </div>
     </div>
 
+    <div id="top-bar">
+      <button class="tb-btn" data-speed="1">1×</button>
+      <button class="tb-btn active" data-speed="2">2×</button>
+      <button class="tb-btn" data-speed="5">5×</button>
+      <button id="btn-settings-tb">⚙</button>
+    </div>
+
     <div id="tab-bar">
       <button class="tab-btn active" data-tab="nest">Nest</button>
       <button class="tab-btn" data-tab="map">Map</button>
     </div>
 
     <div id="prestige-tracker">
-      <span id="pt-label">Nuptial Flight</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span id="pt-label" style="font-weight:600;">Found New Colony</span>
+        <span style="font-size:9px;color:var(--text-dim);">Restart your colony to inherit a permanent mutation and advance a generation.</span>
+      </div>
       <div id="pt-bar-wrap"><div id="pt-bar-fill" style="width:0%"></div></div>
       <button id="btn-nuptial">Launch</button>
     </div>
@@ -1114,13 +1329,17 @@
         <span class="ss-hint" id="ss-hint"></span>
       </div>
 
-      <div class="deck-section">
-        <div class="deck-title">Role Allocation</div>
+      <div id="nest-sub-tabs">
+        <button class="nest-sub-btn active" data-nest-panel="roles">Role</button>
+        <button class="nest-sub-btn" data-nest-panel="combat">Combat</button>
+        <button class="nest-sub-btn" data-nest-panel="upgrades">Upgrades</button>
+      </div>
+
+      <div class="nest-panel active" id="nest-panel-roles">
         <div id="alloc-container"></div>
       </div>
 
-      <div class="deck-section" id="stance-section">
-        <div class="deck-title">Combat Stance</div>
+      <div class="nest-panel" id="nest-panel-combat">
         <div class="stance-row">
           <span class="stance-label">Soldier formation determines combat unit mix</span>
         </div>
@@ -1128,8 +1347,7 @@
         <div style="font-size:9px;color:var(--text-dim);margin-top:4px;" id="stance-preview"></div>
       </div>
 
-      <div class="deck-section">
-        <div class="deck-title">Nest Upgrades</div>
+      <div class="nest-panel" id="nest-panel-upgrades">
         <div id="upgrade-container"></div>
   </div>
 </div>
@@ -1146,14 +1364,6 @@
         </div>
         <div id="map-node-detail"></div>
       </div>
-    </div>
-
-    <div id="bottom-bar">
-      <button class="bb-btn" data-speed="1">1×</button>
-      <button class="bb-btn active" data-speed="2">2×</button>
-      <button class="bb-btn" data-speed="5">5×</button>
-      <button class="bb-btn" data-speed="10">10×</button>
-      <button class="bb-btn" id="btn-settings">⚙</button>
     </div>
   </div>
 </div>
@@ -1950,6 +2160,13 @@ function switchTab(tab) {
   updateUI();
 }
 
+let nestSubTab = 'roles';
+function switchNestSubTab(panel) {
+  nestSubTab = panel;
+  document.querySelectorAll('.nest-sub-btn').forEach(b => b.classList.toggle('active', b.dataset.nestPanel === panel));
+  document.querySelectorAll('.nest-panel').forEach(p => p.classList.toggle('active', p.id === 'nest-panel-' + panel));
+}
+
 // ═══════════════════════════════════════════════════════════
 //  COMBAT SYSTEM
 // ═══════════════════════════════════════════════════════════
@@ -2021,7 +2238,7 @@ function calculateCombat(s, nodeId) {
 
   return {
     nodeId, enemy, enemyPower: enemyPower.toFixed(0), playerPower: playerPower.toFixed(0),
-    ratio: ratio.toFixed(2), outcome, label, casualtyRate,
+    ratio: ratio.toFixed(1), outcome, label, casualtyRate,
     units,
     soldierLoss, workerLoss, salvageChitin,
     combatDuration: COMBAT_CONFIG.combatDuration
@@ -2097,6 +2314,7 @@ function startCombat() {
   addCombatEvent('neutral', `Engaging ${calc.enemy.name}...`);
 
   document.getElementById('battle-stage').classList.remove('battle-shake');
+  triggerCombatFlash();
 }
 
 function addCombatEvent(type, msg) {
@@ -2206,6 +2424,8 @@ function finishCombat() {
 
   c.active = false;
   c.phase = 'resolved';
+
+  triggerCombatFlash();
 
   const s = G;
   const nodeId = c.nodeId;
@@ -2342,7 +2562,7 @@ function updatePrestigeTracker() {
   const s = G;
   const prog = getPrestigeProgress(s);
   document.getElementById('pt-bar-fill').style.width = prog.pct + '%';
-  document.getElementById('pt-label').textContent = `Nuptial Flight (${prog.claimed}/${prog.nodeReq} nodes · ${Math.floor(prog.pop)}/${prog.popReq} pop)`;
+  document.getElementById('pt-label').textContent = `Found New Colony (${prog.claimed}/${prog.nodeReq} nodes · ${Math.floor(prog.pop)}/${prog.popReq} pop)`;
   const tracker = document.getElementById('prestige-tracker');
   const btn = document.getElementById('btn-nuptial');
   if (prog.ready) {
@@ -2394,7 +2614,7 @@ function renderPrestigePanel(step) {
     window._prestigeStep = 'confirm';
     panel.innerHTML = `
       <div class="queen-sprite"></div>
-      <h2>🦋 Nuptial Flight</h2>
+      <h2>🦋 Found New Colony</h2>
       <h3>${isFirstPrestige ? 'Your colony has reached its limit. Launch a new generation.' : `Begin Generation ${nextGen} in a new colony.`}</h3>
       <div class="prestige-section">
         <h4>🔁 Will Reset</h4>
@@ -2462,7 +2682,7 @@ function renderPrestigePanel(step) {
         </div>
       </div>
       ` : ''}
-      <button id="btn-launch-flight" ${!window._pendingMutation ? 'disabled' : ''} onclick="executePrestige()">🦋 Launch Nuptial Flight</button>
+      <button id="btn-launch-flight" ${!window._pendingMutation ? 'disabled' : ''} onclick="executePrestige()">🦋 Found New Colony</button>
       <button class="btn-close" style="margin-top:6px;width:100%;" onclick="renderPrestigePanel('confirm')">← Back</button>
     `;
   } else if (step === 'results') {
@@ -2626,6 +2846,7 @@ function initGame() {
   lastFrameTs = performance.now();
   updateUI();
   spawnViewportAnts();
+  initCameraDrift();
   if (!localStorage.getItem(ONBOARD_KEY)) showOnboarding();
 }
 
@@ -2653,56 +2874,242 @@ function enforceAssignmentLimits(s) {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  VIEWPORT ANTS
+//  VIEWPORT ANTS (State-driven, R6)
 // ═══════════════════════════════════════════════════════════
 let antEls = [];
+const MAX_VP_ANTS = 17;
 
 function spawnViewportAnts() {
   const container = document.getElementById('viewport-ants');
   container.innerHTML = '';
   antEls = [];
-
-  const roles = [
-    { key: 'foragers',  cls: 'forager',   count: 8  },
-    { key: 'excavators', cls: 'excavator', count: 5  },
-    { key: 'soldiers',  cls: 'soldier',   count: 4  }
-  ];
-
-  roles.forEach(role => {
-    for (let i = 0; i < role.count; i++) {
-      const el = document.createElement('div');
-      el.className = `vp-ant ${role.cls}`;
-      el.style.setProperty('--dur', (6 + Math.random() * 8).toFixed(1) + 's');
-      el.style.setProperty('--delay', (Math.random() * -10).toFixed(1) + 's');
-      el.style.setProperty('--dx1', (30 + Math.random() * 60).toFixed(0) + 'px');
-      el.style.setProperty('--dy1', (10 + Math.random() * 30).toFixed(0) + 'px');
-      el.style.setProperty('--dx2', (50 + Math.random() * 80).toFixed(0) + 'px');
-      el.style.setProperty('--dy2', (-10 - Math.random() * 30).toFixed(0) + 'px');
-      el.style.setProperty('--dx3', (-20 - Math.random() * 40).toFixed(0) + 'px');
-      el.style.setProperty('--dy3', (20 + Math.random() * 20).toFixed(0) + 'px');
-      el.style.left = (8 + Math.random() * 75).toFixed(0) + '%';
-      el.style.top = (8 + Math.random() * 75).toFixed(0) + '%';
-      el.style.opacity = 0.4 + Math.random() * 0.5;
-      el._role = role.key;
-      el._baseOpacity = parseFloat(el.style.opacity);
-      container.appendChild(el);
-      antEls.push(el);
-    }
-  });
+  for (let i = 0; i < MAX_VP_ANTS; i++) {
+    const el = document.createElement('div');
+    el.className = 'vp-ant';
+    el.style.setProperty('--dur', (6 + Math.random() * 8).toFixed(1) + 's');
+    el.style.setProperty('--delay', (Math.random() * -10).toFixed(1) + 's');
+    el.style.setProperty('--dx1', (30 + Math.random() * 60).toFixed(0) + 'px');
+    el.style.setProperty('--dy1', (10 + Math.random() * 30).toFixed(0) + 'px');
+    el.style.setProperty('--dx2', (50 + Math.random() * 80).toFixed(0) + 'px');
+    el.style.setProperty('--dy2', (-10 - Math.random() * 30).toFixed(0) + 'px');
+    el.style.setProperty('--dx3', (-20 - Math.random() * 40).toFixed(0) + 'px');
+    el.style.setProperty('--dy3', (20 + Math.random() * 20).toFixed(0) + 'px');
+    el.style.left = (8 + Math.random() * 75).toFixed(0) + '%';
+    el.style.top = (8 + Math.random() * 75).toFixed(0) + '%';
+    el.style.opacity = 0;
+    el.style.display = 'none';
+    el._role = null;
+    container.appendChild(el);
+    antEls.push(el);
+  }
 }
 
 function updateViewportAnts() {
   const s = G;
-  antEls.forEach(el => {
-    const role = el._role;
-    const assigned = s.assigned[role] || 0;
-    const maxForRole = role === 'foragers' ? 8 : (role === 'excavators' ? 5 : 4);
-    const visible = role === 'foragers' ? Math.min(maxForRole, Math.ceil(assigned / 1.5))
-                  : role === 'excavators' ? Math.min(maxForRole, Math.ceil(assigned / 1))
-                  : Math.min(maxForRole, Math.ceil(assigned / 1));
-    const idx = antEls.filter(e => e._role === role).indexOf(el);
-    el.style.display = idx < visible ? 'block' : 'none';
+  const roles = ['foragers', 'excavators', 'soldiers'];
+  const roleCls = { foragers: 'forager', excavators: 'excavator', soldiers: 'soldier' };
+  const totalAssignedS = totalAssigned(s);
+
+  let ptr = 0;
+
+  roles.forEach(role => {
+    const count = s.assigned[role] || 0;
+    const toShow = Math.min(count, Math.ceil(MAX_VP_ANTS * (count / Math.max(1, totalAssignedS || 1))));
+    for (let i = 0; i < toShow && ptr < MAX_VP_ANTS; i++, ptr++) {
+      const el = antEls[ptr];
+      el.className = 'vp-ant ' + roleCls[role];
+      el._role = role;
+      el.style.display = 'block';
+      el.style.opacity = 0.5 + Math.random() * 0.4;
+      if (settings.reducedMotion) el.classList.add('reduced');
+    }
   });
+
+  // Add a few idle/wandering ants only if population is non-trivial
+  const idleShown = ptr;
+
+  for (let i = ptr; i < MAX_VP_ANTS; i++) {
+    const el = antEls[i];
+    el.style.display = 'none';
+    el.style.opacity = 0;
+    el._role = null;
+  }
+
+  // Ambient wandering ants when low population
+  if (idleShown < 3) {
+    const starterRoles = ['foragers', 'excavators', 'soldiers'];
+    for (let i = idleShown; i < Math.min(3, MAX_VP_ANTS); i++) {
+      const el = antEls[i];
+      const role = starterRoles[i % 3];
+      el.className = 'vp-ant ' + roleCls[role];
+      el._role = role;
+      el.style.display = 'block';
+      el.style.opacity = 0.2 + Math.random() * 0.2;
+      if (settings.reducedMotion) el.classList.add('reduced');
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  IMMERSIVE VIEWPORT EFFECTS (R6)
+// ═══════════════════════════════════════════════════════════
+
+/* Chamber glow based on upgrade levels */
+function updateChamberGlow() {
+  const container = document.getElementById('viewport-chamber-glow');
+  const upgrades = [
+    { id: 'nursery', cls: 'nursery-glow', color: 'rgba(232,216,160,0.3)' },
+    { id: 'foodStorage', cls: 'storage-glow', color: 'rgba(122,182,72,0.25)' },
+    { id: 'guardChamber', cls: 'guard-glow', color: 'rgba(200,84,74,0.2)' }
+  ];
+  container.innerHTML = upgrades.map(u => {
+    const lv = getUpgradeLevel(G, u.id);
+    const maxLv = CONFIG.upgradeDefs[u.id].levels;
+    const intensity = lv / Math.max(1, maxLv);
+    const glow = intensity > 0 ? `0 0 ${8 + intensity * 20}px ${u.color}` : 'none';
+    return `<div class="chamber-glow ${u.cls}" style="box-shadow:${glow};opacity:${intensity}"></div>`;
+  }).join('');
+}
+
+/* Larvae cluster */
+function updateViewportLarvae() {
+  const container = document.getElementById('viewport-larvae');
+  const larvae = G.population.larvae;
+  const maxShow = 24;
+  const show = Math.min(larvae, maxShow);
+  let html = '';
+  for (let i = 0; i < maxShow; i++) {
+    html += `<div class="larva-dot" style="opacity:${i < show ? 1 - (i / maxShow) * 0.5 : 0};animation-delay:${(i * 0.2).toFixed(1)}s"></div>`;
+  }
+  container.innerHTML = html;
+  if (settings.reducedMotion) container.classList.add('reduced');
+  else container.classList.remove('reduced');
+}
+
+/* Stockpile indicators */
+function updateViewportStockpiles() {
+  const container = document.getElementById('viewport-stockpiles');
+  const foodPct = G.caps.food > 0 ? G.resources.food / G.caps.food : 0;
+  const matsPct = G.caps.materials > 0 ? G.resources.materials / G.caps.materials : 0;
+
+  const foodSize = 10 + foodPct * 12;
+  const matsSize = 10 + matsPct * 12;
+  const starveEffect = G.status === 'starving' ? 'filter:grayscale(0.5) brightness(0.7);' : '';
+
+  container.innerHTML = `
+    <div class="stockpile-food" style="${starveEffect}">
+      <span class="pile-icon" style="font-size:${foodSize.toFixed(0)}px;opacity:${0.3 + foodPct * 0.7}">🍃</span>
+    </div>
+    <div class="stockpile-mats" style="${starveEffect}">
+      <span class="pile-icon" style="font-size:${matsSize.toFixed(0)}px;opacity:${0.3 + matsPct * 0.7}">🧱</span>
+    </div>
+  `;
+}
+
+/* Combat flash effect */
+function triggerCombatFlash() {
+  const fx = document.getElementById('viewport-fx');
+  const flash = document.createElement('div');
+  flash.className = 'vp-combat-flash';
+  if (settings.reducedMotion) flash.classList.add('reduced');
+  fx.appendChild(flash);
+  setTimeout(() => { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 500);
+}
+
+/* Status-driven viewportFX */
+function updateViewportStatusFX() {
+  const fx = document.getElementById('viewport-fx');
+  const existing = fx.querySelector('.vp-starving-pulse');
+  if (G.status === 'starving' && !existing) {
+    const pulse = document.createElement('div');
+    pulse.className = 'vp-starving-pulse';
+    if (settings.reducedMotion) pulse.classList.add('reduced');
+    fx.appendChild(pulse);
+  } else if (G.status !== 'starving' && existing) {
+    existing.remove();
+  }
+}
+
+/* Day/night cycle */
+let dayNightTimer = 0;
+function updateDayNight(dt) {
+  dayNightTimer += dt;
+  const cycleLen = 60;
+  const phase = (dayNightTimer % cycleLen) / cycleLen;
+  let bg;
+  if (phase < 0.3) bg = 'rgba(20,20,30,0.0)';
+  else if (phase < 0.4) bg = `rgba(20,20,30,${((phase - 0.3) / 0.1) * 0.15})`;
+  else if (phase < 0.8) bg = 'rgba(20,20,30,0.15)';
+  else if (phase < 0.9) bg = `rgba(20,20,30,${0.15 - ((phase - 0.8) / 0.1) * 0.15})`;
+  else bg = 'rgba(20,20,30,0.0)';
+  document.getElementById('viewport-daynight').style.background = bg;
+}
+
+/* Particle (dust motes) spawning */
+function spawnDustMotes() {
+  const container = document.getElementById('viewport-particles');
+  if (settings.reducedMotion) { container.innerHTML = ''; return; }
+  const count = 6;
+  for (let i = 0; i < count; i++) {
+    const mote = document.createElement('div');
+    mote.className = 'dust-mote';
+    mote.style.left = (10 + Math.random() * 80) + '%';
+    mote.style.top = (20 + Math.random() * 60) + '%';
+    mote.style.setProperty('--dx', ((Math.random() - 0.5) * 60) + 'px');
+    mote.style.setProperty('--dy', ((Math.random() - 0.5) * 40 - 10) + 'px');
+    mote.style.animationDuration = (6 + Math.random() * 8) + 's';
+    container.appendChild(mote);
+    mote.addEventListener('animationend', () => { if (mote.parentNode) mote.parentNode.removeChild(mote); }, { once: true });
+  }
+}
+
+/* Nursery hatch pulse */
+function triggerHatchPulse() {
+  const fx = document.getElementById('viewport-fx');
+  const pulse = document.createElement('div');
+  pulse.className = 'hatch-pulse';
+  if (settings.reducedMotion) pulse.classList.add('reduced');
+  fx.appendChild(pulse);
+  setTimeout(() => { if (pulse.parentNode) pulse.parentNode.removeChild(pulse); }, 600);
+}
+
+/* Camera drift setup */
+function initCameraDrift() {
+  const bg = document.getElementById('viewport-bg');
+  const chambers = document.getElementById('viewport-chambers');
+  bg.classList.add('vp-camera-drift');
+  chambers.classList.add('vp-camera-drift');
+}
+
+/* Full immersive update (called from game loop) */
+let dustMoteTimer = 0;
+let prevLarvae = 0;
+function updateViewportImmersive(dt) {
+  updateDayNight(dt);
+
+  dustMoteTimer += dt;
+  if (dustMoteTimer > 2) { dustMoteTimer = 0; spawnDustMotes(); }
+
+  const larvae = G.population.larvae;
+  if (larvae > prevLarvae && prevLarvae > 0) triggerHatchPulse();
+  prevLarvae = larvae;
+
+  updateViewportAnts();
+  updateViewportLarvae();
+  updateViewportStockpiles();
+  updateChamberGlow();
+  updateViewportStatusFX();
+}
+
+function applyReducedMotionToViewport() {
+  const off = settings.reducedMotion;
+  document.querySelectorAll('.vp-ant').forEach(el => el.classList.toggle('reduced', off));
+  document.getElementById('viewport-particles').classList.toggle('reduced', off);
+  document.getElementById('viewport-larvae').classList.toggle('reduced', off);
+  document.querySelectorAll('.vp-camera-drift').forEach(el => el.classList.toggle('reduced', off));
+  document.querySelectorAll('.vp-starving-pulse').forEach(el => el.classList.toggle('reduced', off));
+  document.querySelectorAll('.vp-combat-flash').forEach(el => el.classList.toggle('reduced', off));
+  document.querySelectorAll('.hatch-pulse').forEach(el => el.classList.toggle('reduced', off));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2876,7 +3283,7 @@ function updateUI() {
 
   const idle = unassigned(s);
   const popDetailEl = document.getElementById('rh-pop-detail');
-  popDetailEl.textContent = idle + ' idle';
+  popDetailEl.textContent = Math.floor(idle) + ' idle';
   popDetailEl.className = 'rh-rate ' + (idle > 0 ? 'pos' : '');
 
   // Status strip
@@ -2898,7 +3305,7 @@ function updateUI() {
       const upkeepNote = rd.id === 'foragers'
         ? `<br><span class="neg">−${(s.population.adults * CONFIG.foodUpkeepPerAntPerSec * (1 + (getPrestigeModifiers().foodUpkeep || 0))).toFixed(1)}/s upkeep</span>`
         : '';
-      previewEl.innerHTML = `Each: <span class="amt pos">+${rd.perSec.toFixed(2)} ${rd.unit}/s</span> · Total: <span class="amt pos">+${total}/s</span>${upkeepNote}`;
+      previewEl.innerHTML = `Each: <span class="amt pos">+${rd.perSec.toFixed(1)} ${rd.unit}/s</span> · Total: <span class="amt pos">+${total}/s</span>${upkeepNote}`;
     }
   });
 
@@ -2934,11 +3341,11 @@ function updateUI() {
       } else if (id === 'nursery') {
         const mult = growthMultiplier(s);
         const nextMult = mult + def.effect.growthMult;
-        benEl.textContent = isMaxed ? `Growth: ${mult.toFixed(2)}x (max)` : `Growth: ${mult.toFixed(2)}x → ${nextMult.toFixed(2)}x`;
+        benEl.textContent = isMaxed ? `Growth: ${mult.toFixed(1)}x (max)` : `Growth: ${mult.toFixed(1)}x → ${nextMult.toFixed(1)}x`;
       } else if (id === 'guardChamber') {
         const mult = securityMultiplier(s);
         const nextMult = mult + def.effect.securityMult;
-        benEl.textContent = isMaxed ? `Security: ${mult.toFixed(2)}x (max)` : `Security: ${mult.toFixed(2)}x → ${nextMult.toFixed(2)}x`;
+        benEl.textContent = isMaxed ? `Security: ${mult.toFixed(1)}x (max)` : `Security: ${mult.toFixed(1)}x → ${nextMult.toFixed(1)}x`;
       }
     }
 
@@ -2953,12 +3360,16 @@ function updateUI() {
   });
 
   // Speed buttons
-  document.querySelectorAll('.bb-btn[data-speed]').forEach(b => {
+  document.querySelectorAll('.tb-btn[data-speed]').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.speed) === speed);
   });
 
-  // Viewport ants
+  // Viewport
   updateViewportAnts();
+  updateViewportLarvae();
+  updateViewportStockpiles();
+  updateChamberGlow();
+  updateViewportStatusFX();
   updateStanceUI();
   updatePrestigeTracker();
 
@@ -3108,9 +3519,7 @@ function applySettingsToDOM() {
   document.getElementById('set-audio').classList.toggle('on', settings.audio);
   document.getElementById('set-haptics').classList.toggle('on', settings.haptics);
   document.getElementById('set-reduced-motion').classList.toggle('on', settings.reducedMotion);
-  document.querySelectorAll('.vp-ant').forEach(el => {
-    el.classList.toggle('reduced', settings.reducedMotion);
-  });
+  applyReducedMotionToViewport();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3130,19 +3539,28 @@ function gameLoop(timestamp) {
     updateUI();
   }
 
+  updateDayNight(rawDt);
+  dustMoteTimer += rawDt;
+  if (dustMoteTimer > 2) { dustMoteTimer = 0; spawnDustMotes(); }
+  if (G.population.larvae > prevLarvae && prevLarvae > 0) triggerHatchPulse();
+  prevLarvae = G.population.larvae;
+
   requestAnimationFrame(gameLoop);
 }
 
 // ═══════════════════════════════════════════════════════════
 //  EVENT BINDINGS
 // ═══════════════════════════════════════════════════════════
-document.querySelectorAll('.bb-btn[data-speed]').forEach(b => {
+document.querySelectorAll('.tb-btn[data-speed]').forEach(b => {
   b.addEventListener('click', () => { speed = parseInt(b.dataset.speed, 10); updateUI(); });
 });
 
-document.getElementById('btn-settings').addEventListener('click', toggleSettings);
+document.getElementById('btn-settings-tb').addEventListener('click', toggleSettings);
 document.querySelectorAll('.tab-btn').forEach(b => {
   b.addEventListener('click', () => switchTab(b.dataset.tab));
+});
+document.querySelectorAll('.nest-sub-btn').forEach(b => {
+  b.addEventListener('click', () => switchNestSubTab(b.dataset.nestPanel));
 });
 document.getElementById('btn-close-settings').addEventListener('click', toggleSettings);
 document.getElementById('btn-cancel-combat').addEventListener('click', closeCombatOverlay);
