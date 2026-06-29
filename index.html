@@ -667,9 +667,56 @@
     background-size: cover; background-position: center;
     display: flex; align-items: center; justify-content: center;
   }
+  #battle-counts {
+    display: flex; justify-content: space-between; gap: 8px;
+    padding: 8px 10px; font-size: 12px; font-weight: 800;
+    color: var(--text); border-bottom: 1px solid var(--border);
+  }
+  .battle-count-pill { background: rgba(255,250,240,.88); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; min-width: 96px; }
+  #battle-phase-title {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    background: rgba(45,34,23,.86); color: #fff7e6;
+    border-radius: 999px; padding: 5px 10px;
+    font-size: 11px; font-weight: 900; z-index: 4;
+  }
   #battle-enemy {
     font-size: 48px; position: absolute;
     top: 50%; left: 50%; transform: translate(-50%,-50%);
+  }
+  .battle-side {
+    position: absolute; top: 48%; transform: translateY(-50%);
+    display: flex; align-items: center; justify-content: center;
+    gap: 3px; width: 42%; min-height: 74px;
+    transition: transform 4.8s ease-in-out;
+  }
+  #battle-player-squad { left: -4%; }
+  #battle-enemy-squad { right: -4%; }
+  #battle-stage.phase-charge #battle-player-squad { transform: translate(32%, -50%); }
+  #battle-stage.phase-charge #battle-enemy-squad { transform: translate(-32%, -50%); }
+  #battle-stage.phase-clash #battle-player-squad { transform: translate(54%, -50%); }
+  #battle-stage.phase-clash #battle-enemy-squad { transform: translate(-54%, -50%); }
+  .battle-unit-dot {
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 1px solid rgba(45,34,23,.55);
+    background: #5b3528; box-shadow: 0 1px 0 rgba(255,255,255,.25) inset;
+  }
+  .battle-unit-dot.major { width: 16px; height: 16px; background: #3c231f; }
+  .battle-unit-dot.spitter { background: #8a8f2f; }
+  .battle-unit-dot.scout { background: #90613a; }
+  .battle-enemy-dot { background: #263f47; }
+  .battle-splash {
+    position: absolute; width: 80px; height: 56px; z-index: 5; pointer-events: none;
+    background:
+      radial-gradient(circle at 22% 48%, rgba(190,22,38,.95) 0 7px, transparent 8px),
+      radial-gradient(circle at 46% 38%, rgba(220,42,52,.85) 0 10px, transparent 11px),
+      radial-gradient(circle at 66% 58%, rgba(135,9,28,.9) 0 6px, transparent 7px),
+      radial-gradient(circle at 78% 28%, rgba(235,75,78,.8) 0 4px, transparent 5px);
+    animation: redSplash 0.9s ease-out forwards;
+  }
+  @keyframes redSplash {
+    0% { opacity: 0; transform: scale(.45) rotate(-8deg); }
+    18% { opacity: 1; transform: scale(1.05) rotate(4deg); }
+    100% { opacity: 0; transform: scale(1.35) rotate(10deg); }
   }
   #battle-ants-row {
     position: absolute; bottom: 8px; left: 0; right: 0;
@@ -711,6 +758,12 @@
   .blog-line.enemy { color: var(--red-bright); }
   .blog-line.neutral { color: var(--amber); }
   .blog-line.casualty { color: var(--danger); }
+  #battle-advance {
+    min-height: 46px; border: none; border-top: 1px solid var(--border);
+    background: var(--amber); color: var(--dark);
+    font-size: 13px; font-weight: 900;
+  }
+  #battle-advance:disabled { opacity: .55; background: #d7c4a6; }
 
   /* Results Panel */
   #combat-results {
@@ -1168,6 +1221,7 @@
   .slot-card.locked { opacity: 0.55; background: #ece3d6; }
   .slot-card.building { border-color: var(--amber); }
   .slot-card.complete { border-color: #b7d492; }
+  .slot-card.selected { border-color: var(--amber); box-shadow: inset 0 0 0 2px rgba(216,154,74,.35); }
   .slot-card .slot-name { font-size: 11px; font-weight: 800; line-height: 1.1; }
   .slot-card .slot-state { font-size: 9px; color: var(--text-dim); margin-top: 3px; }
   .timer-mini { height: 5px; background: #eadcc8; border-radius: 99px; overflow: hidden; margin-top: 5px; }
@@ -1177,8 +1231,14 @@
   .picker-btn:disabled { opacity: 0.38; }
   #army-list { display: grid; gap: 5px; }
   #formation-buttons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  #preview-formation-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 8px 0; }
   .formation-btn { min-height: 44px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 10px; font-weight: 800; }
   .formation-btn.active { background: var(--amber); border-color: var(--amber); color: var(--dark); }
+  .res-label { font-size: 8px; font-weight: 800; text-transform: uppercase; color: var(--text-dim); line-height: 1; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #nest-assignments { display: grid; gap: 5px; }
+  .nest-assign-row { display: grid; grid-template-columns: minmax(0,1fr) 44px 32px 44px; align-items: center; gap: 5px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 5px 6px; }
+  .nest-assign-main { min-width: 0; }
+  .nest-assign-count { font-size: 16px; font-weight: 900; text-align: center; font-variant-numeric: tabular-nums; }
   #campaign-list { flex: 1; min-height: 0; display: grid; gap: 5px; }
   .territory-row.claimed { border-color: #b7d492; background: #f3f8ed; }
   .territory-row.locked { opacity: 0.48; }
@@ -1200,23 +1260,23 @@
     <div id="res-pills">
       <div class="res-pill">
         <span class="rp-icon">🍎</span>
-        <div class="rp-text"><div class="rp-val" id="rh-food">0</div><div class="rp-sub pos" id="rh-food-rate">0/s</div></div>
+        <div class="rp-text"><div class="res-label">Food</div><div class="rp-val" id="rh-food">0</div><div class="rp-sub pos" id="rh-food-rate">0/s</div></div>
       </div>
       <div class="res-pill">
         <span class="rp-icon">🧱</span>
-        <div class="rp-text"><div class="rp-val" id="rh-mats">0</div><div class="rp-sub pos" id="rh-mats-rate">0/s</div></div>
+        <div class="rp-text"><div class="res-label">Materials</div><div class="rp-val" id="rh-mats">0</div><div class="rp-sub pos" id="rh-mats-rate">0/s</div></div>
       </div>
       <div class="res-pill">
         <span class="rp-icon">🛡️</span>
-        <div class="rp-text"><div class="rp-val" id="rh-chitin">0</div><div class="rp-sub pos" id="rh-chitin-rate">Chitin</div></div>
+        <div class="rp-text"><div class="res-label">Chitin</div><div class="rp-val" id="rh-chitin">0</div><div class="rp-sub pos" id="rh-chitin-rate">0/s</div></div>
       </div>
       <div class="res-pill">
         <span class="rp-icon">~</span>
-        <div class="rp-text"><div class="rp-val" id="rh-pheromones">0</div><div class="rp-sub pos" id="rh-pher-rate">Pher.</div></div>
+        <div class="rp-text"><div class="res-label">Pheromone</div><div class="rp-val" id="rh-pheromones">0</div><div class="rp-sub pos" id="rh-pher-rate">0/s</div></div>
       </div>
       <div class="res-pill pop">
         <span class="rp-icon">🐜</span>
-        <div class="rp-text"><div class="rp-val" id="rh-pop">0</div><div class="rp-sub" id="rh-pop-detail">0 idle</div></div>
+        <div class="rp-text"><div class="res-label">Ants</div><div class="rp-val" id="rh-pop">0</div><div class="rp-sub" id="rh-pop-detail">0 idle</div></div>
       </div>
     </div>
     <div id="speed-group">
@@ -1299,8 +1359,7 @@
 
       <div id="army-panel" class="tab-panel" data-panel="army">
         <div class="panel-card">
-          <div class="mini-title">Formation</div>
-          <div id="formation-buttons"></div>
+          <div class="mini-title">Army Readiness</div>
           <div id="readiness-line" class="line-sub" style="margin-top:5px;"></div>
         </div>
         <div id="army-list"></div>
@@ -1376,6 +1435,8 @@
     <div id="cp-title">⚔️ Battle Preview</div>
     <div id="cp-enemy"></div>
     <div id="cp-details"></div>
+    <div class="mini-title">Formation</div>
+    <div id="preview-formation-buttons"></div>
     <div class="cp-outcome" id="cp-outcome"></div>
     <div class="cp-actions">
       <button class="btn-close" id="btn-cancel-combat">Retreat</button>
@@ -1383,12 +1444,20 @@
     </div>
   </div>
   <div id="battle-arena">
+    <div id="battle-counts">
+      <div class="battle-count-pill">Ants: <span id="battle-player-count">0</span></div>
+      <div class="battle-count-pill">Enemies: <span id="battle-enemy-count">0</span></div>
+    </div>
     <div id="battle-stage">
+      <div id="battle-phase-title">Prepare</div>
+      <div id="battle-player-squad" class="battle-side"></div>
+      <div id="battle-enemy-squad" class="battle-side"></div>
       <div id="battle-enemy"></div>
       <div id="battle-enemy-sprite"></div>
       <div id="battle-ants-row"></div>
     </div>
     <div id="battle-event-log"></div>
+    <button id="battle-advance" disabled>Brace...</button>
   </div>
   <div id="combat-results">
     <div id="cr-banner"></div>
@@ -1619,10 +1688,11 @@ let G = createInitialState();
 let speed = 2;
 let activeTab = 'nest';
 let lastFrameTs = 0;
+let lastUiRenderTs = 0;
 
 // Settings
 let settings = {
-  audio: false,
+  audio: true,
   haptics: true,
   reducedMotion: false
 };
@@ -3296,7 +3366,80 @@ function applySettingsToDOM() {
   document.getElementById('set-audio').classList.toggle('on', settings.audio);
   document.getElementById('set-haptics').classList.toggle('on', settings.haptics);
   document.getElementById('set-reduced-motion').classList.toggle('on', settings.reducedMotion);
+  if (settings.audio) startPeacefulMusic();
+  else stopPeacefulMusic();
   applyReducedMotionToViewport();
+}
+
+let audioCtx = null;
+let musicTimer = null;
+let musicGain = null;
+
+function getAudioCtx() {
+  if (!settings.audio) return null;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  } catch (e) {
+    return null;
+  }
+}
+
+function playTone(freq, start, duration, type, gainValue) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(gainValue, start + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.03);
+}
+
+function playButtonClick() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  playTone(520, now, 0.055, 'triangle', 0.035);
+  playTone(880, now + 0.025, 0.045, 'sine', 0.02);
+}
+
+function startPeacefulMusic() {
+  const ctx = getAudioCtx();
+  if (!ctx || musicTimer) return;
+  musicGain = musicGain || ctx.createGain();
+  musicGain.gain.setValueAtTime(0.035, ctx.currentTime);
+  musicGain.connect(ctx.destination);
+  const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 293.66, 349.23];
+  let idx = 0;
+  const tickMusic = () => {
+    if (!settings.audio || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(notes[idx % notes.length], now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.06, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.35);
+    osc.connect(gain).connect(musicGain);
+    osc.start(now);
+    osc.stop(now + 1.5);
+    idx++;
+  };
+  tickMusic();
+  musicTimer = setInterval(tickMusic, 1500);
+}
+
+function stopPeacefulMusic() {
+  if (musicTimer) clearInterval(musicTimer);
+  musicTimer = null;
+  if (musicGain && audioCtx) musicGain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.08);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3313,7 +3456,10 @@ function gameLoop(timestamp) {
     tick(G, effectiveDt);
     tickCombat(rawDt);
     enforceAssignmentLimits(G);
-    updateUI();
+    if (timestamp - lastUiRenderTs > 500) {
+      updateUI();
+      lastUiRenderTs = timestamp;
+    }
   }
 
   requestAnimationFrame(gameLoop);
@@ -3325,6 +3471,11 @@ function gameLoop(timestamp) {
 document.querySelectorAll('.tb-btn[data-speed]').forEach(b => {
   b.addEventListener('click', () => { speed = parseInt(b.dataset.speed, 10); updateUI(); });
 });
+
+document.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('button')) playButtonClick();
+  if (settings.audio) startPeacefulMusic();
+}, { capture: true });
 
 document.getElementById('btn-settings-tb').addEventListener('click', toggleSettings);
 document.querySelectorAll('.tab-btn').forEach(b => {
@@ -3346,6 +3497,7 @@ document.getElementById('set-audio').addEventListener('click', () => {
   settings.audio = !settings.audio;
   saveSettings();
   applySettingsToDOM();
+  if (settings.audio) startPeacefulMusic();
 });
 document.getElementById('set-haptics').addEventListener('click', () => {
   settings.haptics = !settings.haptics;
@@ -3461,22 +3613,29 @@ function bonuses(){const b={foodMult:1,matsMult:1,growthMult:1,foodCapBonus:0}; 
 function updateCaps(){const b=bonuses(); G.caps.food=120+b.foodCapBonus+80*chLevel('granary'); G.caps.materials=80+60*chLevel('store'); G.caps.chitin=40; G.caps.pheromones=25;}
 function getNetRates(s=G){const b=bonuses(), adults=s.population.adults, nursery=1+0.25*chLevel('nursery',s); const army=Object.values(s.army.units).reduce((a,c)=>a+c,0); const woundedRecovering=Object.values(s.army.wounded).reduce((a,c)=>a+c,0); const foodUpkeep=adults*0.035+army*0.012+woundedRecovering*0.01; return {netFood:(s.assigned.foragers||0)*.35*b.foodMult-foodUpkeep,matsRate:(s.assigned.excavators||0)*.22*b.matsMult,chitinRate:(s.assigned.soldiers||0)*.02+0.025*chLevel('forge',s),pherRate:0.015*chLevel('scout',s),larvaeRate:adults*.006*nursery*b.growthMult,matureRate:s.population.larvae*.0025*nursery*b.growthMult,foodRatio:s.resources.food/Math.max(1,s.caps.food)};}
 function tick(s,dt){G=s; updateCaps(); const r=getNetRates(s); s.resources.food=Math.max(0,Math.min(s.caps.food,s.resources.food+r.netFood*dt)); s.resources.materials=Math.max(0,Math.min(s.caps.materials,s.resources.materials+r.matsRate*dt)); s.resources.chitin=Math.max(0,Math.min(s.caps.chitin,s.resources.chitin+r.chitinRate*dt)); s.resources.pheromones=Math.max(0,Math.min(s.caps.pheromones,s.resources.pheromones+r.pherRate*dt)); const _cap=popCap(s); if(s.resources.food>0&&totalPop(s)<_cap)s.population.larvae+=r.larvaeRate*dt; const _room=Math.max(0,_cap-s.population.adults),m=Math.min(s.population.larvae,r.matureRate*dt,_room); s.population.larvae-=m; s.population.adults+=m; tickBuild(s,dt); tickTrain(s,dt); enforceAssignmentLimits(s); const fr=s.resources.food/Math.max(1,s.caps.food); s.status=fr<.1?'starving':fr<.2?'hungry':(s.resources.food>=s.caps.food-1||s.resources.materials>=s.caps.materials-1?'capped':'stable'); refreshUnlocks(s);}
-function tickBuild(s,dt){const a=s.buildings.slots.find(x=>x.status==='building'); s.buildings.activeBuildSlotId=a?a.id:null; if(a){a.buildTimer=Math.max(0,a.buildTimer-dt); if(a.buildTimer<=0){a.status='complete'; if(a._upgrading){a.level=(a.level||1)+1; delete a._upgrading;} else {a.level=Math.max(1,a.level||1);} s.buildings.activeBuildSlotId=null; saveGame();}}}
+function tickBuild(s,dt){const a=s.buildings.slots.find(x=>x.status==='building'); if(a){s.buildings.activeBuildSlotId=a.id; a.buildTimer=Math.max(0,a.buildTimer-dt); if(a.buildTimer<=0){a.status='complete'; if(a._upgrading){a.level=(a.level||1)+1; delete a._upgrading;} else {a.level=Math.max(1,a.level||1);} saveGame();}}}
 function startUpgrade(slotId){const sl=G.buildings.slots.find(x=>x.id===slotId); if(!sl||sl.status!=='complete')return; const lvl=sl.level||1; if(lvl>=3){showToast('Chamber already at max level.');return;} if(G.buildings.slots.some(x=>x.status==='building')){showToast('One construction runs at a time.');return;} const d=CHAMBERS[sl.buildingId],cost={}; Object.keys(d.cost).forEach(k=>cost[k]=Math.round(d.cost[k]*Math.pow(1.8,lvl))); if(!payCost(cost)){showToast('Not enough resources to upgrade.');return;} sl.status='building'; sl._upgrading=true; sl.buildDuration=Math.round(d.time*Math.pow(1.5,lvl)); sl.buildTimer=sl.buildDuration; saveGame(); updateUI();}
 function tickTrain(s,dt){const q=s.army.trainingQueue[0]; if(!q)return; q.timer=Math.max(0,q.timer-dt); if(q.timer<=0){s.army.units[q.unitId]++; s.army.trainingQueue.shift(); saveGame();}}
 function applyOfflineProgress(s,elapsed){const cap=Math.min(elapsed,CONFIG.maxOfflineSeconds); if(cap<=0)return{applied:false}; for(let i=0;i<cap;i++)tick(s,1); s.battle=null; return{applied:true,elapsed:cap,gain:{food:'0',materials:'0',population:'0'}};}
 function saveGame(){G.session.lastTickTs=Date.now(); const b=G.battle; G.battle=null; try{localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){} G.battle=b;}
 function loadGame(){try{const raw=localStorage.getItem(SAVE_KEY); return raw?migrate(JSON.parse(raw)):null;}catch(e){return null;}}
 function initGame(){loadSettings(); G=loadGame()||makeState(); const elapsed=(Date.now()-(G.session.lastTickTs||Date.now()))/1000; if(elapsed>1)applyOfflineProgress(G,elapsed); G.session.lastTickTs=Date.now(); G.battle=null; buildConquestUI(); applySettingsToDOM(); lastFrameTs=performance.now(); switchTab('nest'); updateUI();}
-function buildConquestUI(){const f=document.getElementById('formation-buttons'); if(f)f.innerHTML=Object.entries(FORMATIONS).map(([id,x])=>`<button class="formation-btn" data-formation="${id}">${x.name}</button>`).join(''); document.querySelectorAll('.formation-btn').forEach(b=>b.addEventListener('click',()=>{G.army.formation=b.dataset.formation; updateUI();}));}
+function renderFormationControls(containerId='preview-formation-buttons'){
+  const f=document.getElementById(containerId); if(!f)return;
+  f.innerHTML=Object.entries(FORMATIONS).map(([id,x])=>`<button class="formation-btn ${G.army.formation===id?'active':''}" data-formation="${id}">${x.name}</button>`).join('');
+  f.querySelectorAll('.formation-btn').forEach(b=>b.addEventListener('click',()=>{G.army.formation=b.dataset.formation; saveGame(); if(window._pendingNodeId)showCombatPreview(window._pendingNodeId); else updateUI();}));
+}
+function buildConquestUI(){renderFormationControls('preview-formation-buttons');}
 function switchTab(tab){activeTab=tab; document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab)); document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===tab)); document.getElementById('map-viewport').classList.toggle('active',tab==='campaign'); document.getElementById('colony-scene').style.display=tab==='campaign'?'none':''; updateUI();}
 function activeText(){const b=G.buildings.slots.find(x=>x.status==='building'),q=G.army.trainingQueue[0]; return b?`${CHAMBERS[b.buildingId].name}: ${Math.ceil(b.buildTimer)}s`:q?`Training ${UNITS[q.unitId].name}: ${Math.ceil(q.timer)}s`:'No active timers';}
 function claimedCount(){return Object.values(G.campaign.territories).filter(x=>x.claimed).length;}
 function renderVisual(){const scene=document.getElementById('colony-scene'); if(!scene||activeTab==='campaign')return; const img=activeTab==='army'?'assets/bg_army_muster.png':activeTab==='build'?'assets/tiles_nest_chambers.png':'assets/bg_nest_cross_section.png'; scene.innerHTML=`<div class="panel-card" style="height:100%;background-image:linear-gradient(rgba(255,250,240,.82),rgba(255,250,240,.82)),url('${img}');background-size:cover;background-position:center;display:flex;align-items:end;"><div><div class="mini-title">${activeTab}</div><div class="line-main">${fmtInt(totalPop(G))} ants, ${claimedCount()} claimed</div><div class="line-sub">${activeText()}</div></div></div>`;}
-function updateUI(){updateCaps(); const r=getNetRates(G), set=(id,v)=>{const e=document.getElementById(id); if(e)e.textContent=v;}; set('rh-food',fmtInt(G.resources.food)); set('rh-mats',fmtInt(G.resources.materials)); set('rh-chitin',fmtInt(G.resources.chitin)); set('rh-pheromones',fmtInt(G.resources.pheromones)); set('rh-pop',fmtInt(totalPop(G))); set('rh-food-rate',`${r.netFood>=0?'+':''}${fmt1(r.netFood)}/s`); set('rh-mats-rate',`+${fmt1(r.matsRate)}/s`); set('rh-chitin-rate',`+${fmt1(r.chitinRate)}/s`); set('rh-pher-rate',`+${fmt1(r.pherRate)}/s`); set('rh-pop-detail',`${fmtInt(unassigned(G))} idle / cap ${popCap(G)}`); document.querySelectorAll('.tb-btn[data-speed]').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.speed)===speed)); renderStatus(); renderNest(); renderBuild(); renderArmy(); renderCampaign(); renderVisual();}
+function updateUI(){updateCaps(); const r=getNetRates(G), set=(id,v)=>{const e=document.getElementById(id); if(e)e.textContent=v;}; set('rh-food',fmtInt(G.resources.food)); set('rh-mats',fmtInt(G.resources.materials)); set('rh-chitin',fmtInt(G.resources.chitin)); set('rh-pheromones',fmtInt(G.resources.pheromones)); set('rh-pop',fmtInt(totalPop(G))); set('rh-food-rate',`${r.netFood>=0?'+':''}${fmt1(r.netFood)}/s`); set('rh-mats-rate',`+${fmt1(r.matsRate)}/s`); set('rh-chitin-rate',`+${fmt1(r.chitinRate)}/s`); set('rh-pher-rate',`+${fmt1(r.pherRate)}/s`); set('rh-pop-detail',`${fmtInt(unassigned(G))} idle / cap ${popCap(G)}`); document.querySelectorAll('.tb-btn[data-speed]').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.speed)===speed)); renderStatus(); renderNest(); bindNestAssignments(); renderBuild(); renderArmy(); renderCampaign(); renderVisual();}
 function renderStatus(){const strip=document.getElementById('status-strip'); if(!strip)return; strip.className=G.status; document.getElementById('ss-icon').textContent=G.status==='stable'?'*':'!'; document.getElementById('ss-text').textContent=G.status==='hungry'?'Food running low':G.status==='starving'?'Starvation risk':'Colony is stable'; document.getElementById('ss-hint').textContent=recommendation();}
 function recommendation(){const wounded=Object.values(G.army.wounded).reduce((a,b)=>a+b,0); if(wounded>=3)return'Recover wounded before the next battle'; if(!hasChamber('barracks'))return'Build a Barracks to train Majors'; const n=Object.entries(G.campaign.territories).find(([id,s])=>s.unlocked&&!s.claimed); if(!n)return'Prepare for the next biome'; const t=TERRITORIES[n[0]],rd=readiness(t); return rd==='Dangerous'?`Train more army before ${t.name}`:`Attack ${t.name} (${rd})`;}
-function renderNest(){const r=getNetRates(G), b=bonuses(), el=document.getElementById('nest-summary'); if(el)el.innerHTML=[['Production',`Food ${fmt1(r.netFood)}/s, Mats +${fmt1(r.matsRate)}/s`],['Construction',activeText()],['Training',G.army.trainingQueue.length?`${G.army.trainingQueue.length} queued`:'Queue empty'],['Territory',`${claimedCount()} claimed, food x${fmt1(b.foodMult)}`]].map(x=>`<div class="metric-row"><div class="grow"><div class="line-main">${x[0]}</div><div class="line-sub">${x[1]}</div></div></div>`).join(''); const n=document.getElementById('next-action'); if(n)n.textContent=recommendation();}
+function renderNest(){const r=getNetRates(G), b=bonuses(), el=document.getElementById('nest-summary'); if(el)el.innerHTML=[['Production',`Food ${fmt1(r.netFood)}/s, Mats +${fmt1(r.matsRate)}/s`],['Timers',activeText()],['Territory',`${claimedCount()} claimed, food x${fmt1(b.foodMult)}`],['Idle Ants',`${fmtInt(unassigned(G))} available`]].map(x=>`<div class="metric-row"><div class="grow"><div class="line-main">${x[0]}</div><div class="line-sub">${x[1]}</div></div></div>`).join('')+renderNestAssignments(); const n=document.getElementById('next-action'); if(n)n.textContent=recommendation();}
+function renderNestAssignments(){const rows=[['foragers','Food','Gather leaves and fungus'],['excavators','Mining','Dig materials and chitin'],['soldiers','Defense','Hold trails and support chitin']]; return `<div id="nest-assignments">${rows.map(([id,name,desc])=>`<div class="nest-assign-row"><div class="nest-assign-main"><div class="line-main">${name}</div><div class="line-sub">${desc}</div></div><button class="btn-small" data-nest-assign="${id}" data-delta="-1">-</button><div class="nest-assign-count">${fmtInt(G.assigned[id]||0)}</div><button class="btn-small ready" data-nest-assign="${id}" data-delta="1">+</button></div>`).join('')}</div>`;}
+function bindNestAssignments(){document.querySelectorAll('[data-nest-assign]').forEach(b=>b.addEventListener('click',()=>{changeAllocation(b.dataset.nestAssign,parseInt(b.dataset.delta,10)); saveGame();}));}
 function renderBuild(){const slots=document.getElementById('build-slots'); if(!slots)return; slots.innerHTML=G.buildings.slots.map(sl=>{const d=CHAMBERS[sl.buildingId],pct=sl.status==='building'?(1-sl.buildTimer/sl.buildDuration)*100:0; return`<button class="slot-card ${sl.status}" data-slot="${sl.id}"><div class="slot-name">${d?d.name:(sl.status==='locked'?'Locked Slot':'Empty Chamber')}</div><div class="slot-state">${sl.status==='building'?Math.ceil(sl.buildTimer)+'s left':sl.status}</div>${sl.status==='building'?`<div class="timer-mini"><div style="width:${pct}%"></div></div>`:''}</button>`;}).join(''); slots.querySelectorAll('[data-slot]').forEach(b=>b.addEventListener('click',()=>{G.buildings.activeBuildSlotId=b.dataset.slot; renderBuild();})); const selected=G.buildings.slots.find(x=>x.id===G.buildings.activeBuildSlotId)||G.buildings.slots.find(x=>x.status==='empty'), picker=document.getElementById('chamber-picker'), active=G.buildings.slots.some(x=>x.status==='building'); if(picker)picker.innerHTML=unlockedChambers().slice(0,4).map(id=>{const d=CHAMBERS[id],built=G.buildings.slots.some(x=>x.buildingId===id),disabled=!selected||selected.status!=='empty'||active||built||!hasCost(d.cost); return`<button class="picker-btn" data-build="${id}" ${disabled?'disabled':''}>${d.name}<br><span class="line-sub">${costText(d.cost)} ${d.time}s</span></button>`;}).join(''); document.querySelectorAll('[data-build]').forEach(b=>b.addEventListener('click',()=>startBuild(b.dataset.build)));}
 function startBuild(id){const d=CHAMBERS[id], sl=G.buildings.slots.find(x=>x.id===G.buildings.activeBuildSlotId&&x.status==='empty')||G.buildings.slots.find(x=>x.status==='empty'); if(!sl||G.buildings.slots.some(x=>x.status==='building')||!payCost(d.cost))return; Object.assign(sl,{buildingId:id,status:'building',buildTimer:d.time,buildDuration:d.time,level:0}); saveGame(); updateUI();}
 function armyPower(s=G,enemyTraits){const f=FORMATIONS[s.army.formation]||FORMATIONS.balanced,u=s.army.units; let front=u.majors*3.2*f.frontMult+u.swarmers*0.5; if(s.army.formation==='acid'&&u.majors===0)front*=0.75; const swarm=u.swarmers*1.7*f.swarmMult+u.scouts*0.6; let ranged=(u.spitters*2.4*f.rangedMult+u.scouts*0.4)*(1+0.10*chLevel('acid',s)); if(s.army.formation==='acid'&&enemyTraits&&enemyTraits.includes('flying'))ranged*=1.25; const support=u.scouts*1.2+2*chLevel('command',s); return{front,swarm,ranged,support,total:front+swarm+ranged+support};}
@@ -3501,6 +3660,7 @@ function showCombatPreview(id){
   const hint=(t.traits||[]).map(tr=>ENEMY_HINTS[tr]).find(Boolean);
   document.getElementById('cp-outcome').innerHTML=`Estimated: <b>${readiness(t)}</b>${scouted?'':' · build Scout Tunnel for exact numbers'}${hint?`<br><span class="cp-hint">${hint}</span>`:''}`;
   window._pendingNodeId=id;
+  renderFormationControls('preview-formation-buttons');
 }
 // Removed: dead duplicate startCombat (superseded by the startCombat assignment below).
 // It produced Title-Case results ('Clean Victory') that applyBattle (snake_case keys)
@@ -3522,7 +3682,7 @@ function applyBattle(id,result,r3){
   });
 }
 function claimState(s,id){const st=s.campaign.territories[id]; if(!st)return; Object.assign(st,{state:'claimed',unlocked:true,claimed:true,battleCleared:true}); (TERRITORIES[id].unlocks||[]).forEach(n=>{if(s.campaign.territories[n]&&!s.campaign.territories[n].claimed)Object.assign(s.campaign.territories[n],{state:'available',unlocked:true});}); const r=TERRITORIES[id].reward; if(r.chitin)s.resources.chitin=Math.min(s.caps.chitin,s.resources.chitin+r.chitin); if(r.pheromones)s.resources.pheromones=Math.min(s.caps.pheromones,s.resources.pheromones+r.pheromones); refreshUnlocks(s);}
-function closeCombatOverlay(){document.getElementById('combat-overlay').classList.remove('active'); document.getElementById('combat-preview').classList.remove('active'); document.getElementById('battle-arena').classList.remove('active'); document.getElementById('combat-results').classList.remove('active'); window._pendingNodeId=null; if(window._resultToast){showToast(window._resultToast); window._resultToast=null;} updateUI();}
+function closeCombatOverlay(){document.getElementById('combat-overlay').classList.remove('active'); document.getElementById('combat-preview').classList.remove('active'); document.getElementById('battle-arena').classList.remove('active'); document.getElementById('combat-results').classList.remove('active'); window._pendingNodeId=null; window._battleFlow=null; if(window._resultToast){showToast(window._resultToast); window._resultToast=null;} updateUI();}
 function resetGame(){G=makeState(); try{localStorage.removeItem(SAVE_KEY);}catch(e){} buildConquestUI(); updateUI();}
 
 // Completion pass for Sprints B-D.
@@ -3567,33 +3727,52 @@ makeState=function(){
   completeSlotsForProgress(s);
   return s;
 };
+function selectBuildSlot(slotId){
+  G.buildings.activeBuildSlotId=slotId;
+  renderBuild();
+  const sl=G.buildings.slots.find(x=>x.id===slotId);
+  if(sl?.status==='locked')showToast('Claim more territory to unlock this chamber slot.');
+}
+function bindBuildSlotDelegation(){
+  const slots=document.getElementById('build-slots');
+  if(!slots)return;
+  slots.dataset.bound='1';
+  const handleSlotTap=(e)=>{
+    const card=e.target.closest('[data-slot]');
+    if(!card)return;
+    e.preventDefault();
+    selectBuildSlot(card.dataset.slot);
+  };
+  slots.onpointerdown=handleSlotTap;
+  slots.onclick=handleSlotTap;
+}
 renderBuild=function(){
   completeSlotsForProgress(G);
   const slots=document.getElementById('build-slots'); if(!slots)return;
+  bindBuildSlotDelegation();
   slots.innerHTML=G.buildings.slots.map(sl=>{const d=CHAMBERS[sl.buildingId],pct=sl.status==='building'?(1-sl.buildTimer/sl.buildDuration)*100:0,sel=sl.id===G.buildings.activeBuildSlotId; const nm=d?d.name+(sl.status==='complete'&&sl.level?` Lv${sl.level}`:''):(sl.status==='locked'?'Locked Slot':'Empty Chamber'); const st=sl.status==='building'?Math.ceil(sl.buildTimer)+'s left':(sl.status==='complete'&&(sl.level||1)<3?'tap to upgrade':sl.status); return`<button class="slot-card ${sl.status}${sel?' selected':''}" data-slot="${sl.id}"><div class="slot-name">${nm}</div><div class="slot-state">${st}</div>${sl.status==='building'?`<div class="timer-mini"><div style="width:${pct}%"></div></div>`:''}</button>`;}).join('');
-  slots.querySelectorAll('[data-slot]').forEach(b=>b.addEventListener('click',()=>{G.buildings.activeBuildSlotId=b.dataset.slot; renderBuild();}));
+  slots.querySelectorAll('[data-slot]').forEach(b=>{const tap=()=>selectBuildSlot(b.dataset.slot); b.addEventListener('pointerdown',tap); b.addEventListener('click',tap);});
   const picker=document.getElementById('chamber-picker'); if(!picker)return;
   const selected=G.buildings.slots.find(x=>x.id===G.buildings.activeBuildSlotId)||G.buildings.slots.find(x=>x.status==='empty');
   const active=G.buildings.slots.some(x=>x.status==='building');
   if(selected&&selected.status==='complete'){
     const d=CHAMBERS[selected.buildingId],lvl=selected.level||1;
     if(lvl>=3){picker.innerHTML=`<div class="panel-card"><div class="line-main">${d.name} — Max level</div><div class="line-sub">${d.desc}</div></div>`;}
-    else{const cost={}; Object.keys(d.cost).forEach(k=>cost[k]=Math.round(d.cost[k]*Math.pow(1.8,lvl))); const time=Math.round(d.time*Math.pow(1.5,lvl)); const can=!active&&hasCost(cost); picker.innerHTML=`<div class="panel-card"><div class="line-main">${d.name} Lv${lvl}</div><div class="line-sub">${d.desc}</div></div><button class="picker-btn" data-upgrade="${selected.id}" ${can?'':'disabled'}>Upgrade to Lv${lvl+1}<br><span class="line-sub">${costText(cost)} ${time}s</span></button>`;}
+    else{const cost={}; Object.keys(d.cost).forEach(k=>cost[k]=Math.round(d.cost[k]*Math.pow(1.8,lvl))); const time=Math.round(d.time*Math.pow(1.5,lvl)); const can=!active&&hasCost(cost); picker.innerHTML=`<div class="panel-card"><div class="line-main">${d.name} Lv${lvl} selected</div><div class="line-sub">${d.desc}</div></div><button class="picker-btn" data-upgrade="${selected.id}" ${can?'':'disabled'}>Upgrade to Lv${lvl+1}<br><span class="line-sub">${costText(cost)} ${time}s</span></button>${!can?`<button class="picker-btn" data-upgrade-info="${selected.id}">${active?'Construction busy':'Need '+costText(cost)}</button>`:''}`;}
     picker.querySelectorAll('[data-upgrade]').forEach(b=>b.addEventListener('click',()=>startUpgrade(b.dataset.upgrade)));
+    picker.querySelectorAll('[data-upgrade-info]').forEach(b=>b.addEventListener('click',()=>showToast(active?'One construction runs at a time.':'Not enough resources to upgrade.')));
     return;
   }
   if(!selected||selected.status!=='empty'){picker.innerHTML=`<div class="panel-card"><div class="line-main">${selected&&selected.status==='building'?'Construction in progress':'Locked chamber slot'}</div><div class="line-sub">${selected&&selected.status==='building'?'One build runs at a time.':'Claim more territory to open new slots.'}</div></div>`; return;}
   const choices=unlockedChambers().filter(id=>!G.buildings.slots.some(x=>x.buildingId===id)).slice(0,4);
-  picker.innerHTML=choices.length?choices.map(id=>{const d=CHAMBERS[id],disabled=active||!hasCost(d.cost); return`<button class="picker-btn" data-build="${id}" ${disabled?'disabled':''}>${d.name}<br><span class="line-sub">${costText(d.cost)} ${d.time}s</span></button>`;}).join(''):'<div class="panel-card"><div class="line-main">All available chambers are built.</div><div class="line-sub">Claim more territory to unlock new chamber types.</div></div>';
+  picker.innerHTML=`<div class="panel-card"><div class="line-main">${selected.id.replace('slot_','Slot ')} selected</div><div class="line-sub">Choose a chamber to build here.</div></div>`+(choices.length?choices.map(id=>{const d=CHAMBERS[id],disabled=active||!hasCost(d.cost); return`<button class="picker-btn" data-build="${id}" ${disabled?'disabled':''}>${d.name}<br><span class="line-sub">${costText(d.cost)} ${d.time}s</span></button>`;}).join(''):'<div class="panel-card"><div class="line-main">All available chambers are built.</div><div class="line-sub">Claim more territory to unlock new chamber types.</div></div>');
   picker.querySelectorAll('[data-build]').forEach(b=>b.addEventListener('click',()=>startBuild(b.dataset.build)));
 };
 renderArmy=function(){
-  document.querySelectorAll('.formation-btn').forEach(b=>b.classList.toggle('active',b.dataset.formation===G.army.formation));
   const t=TERRITORIES[G.campaign.selectedTerritoryId];
   const p=armyPower(G,t&&t.traits),ready=t?readiness(t):(p.total>=20?'Safe':p.total>=10?'Risky':'Dangerous'),rl=document.getElementById('readiness-line');
   const wounded=Object.values(G.army.wounded).reduce((a,b)=>a+b,0);
-  const ftip=(FORMATIONS[G.army.formation]||FORMATIONS.balanced).tip;
-  if(rl)rl.textContent=`${ready} vs ${t?t.name:'—'} · Power ${fmt1(p.total)} · Queue ${G.army.trainingQueue.length}/3${wounded?` · Recovering ${wounded}`:''}. ${ftip}`;
+  if(rl)rl.textContent=`${ready} vs ${t?t.name:'—'} · Power ${fmt1(p.total)} · Queue ${G.army.trainingQueue.length}/3${wounded?` · Recovering ${wounded}`:''}. Choose formation before combat.`;
   const list=document.getElementById('army-list'); if(!list)return;
   list.innerHTML=Object.keys(UNITS).map(id=>{const d=UNITS[id],ok=unitUnlocked(id),can=ok&&hasCost(d.cost); return`<div class="unit-row"><div class="grow"><div class="line-main">${d.name}: ${fmtInt(G.army.units[id])} (${fmtInt(G.army.wounded[id])} wounded)</div><div class="line-sub">${ok?d.role+' - '+costText(d.cost)+', '+d.time+'s':'Needs '+(CHAMBERS[d.unlock]?.name||'unlock')}</div></div><button class="btn-small ${can?'ready':''}" data-train="${id}" ${can?'':'disabled'}>Train</button></div>`;}).join('');
   list.querySelectorAll('[data-train]').forEach(b=>b.addEventListener('click',()=>trainUnit(b.dataset.train)));
@@ -3613,10 +3792,7 @@ function resolveBattle(id){
   const log=[];
   for(let i=0;i<3;i++){log.push(LOG_POOLS.banner[i]); log.push(pick(LOG_POOLS[scores[i]>=1?poolPairs[i][0]:poolPairs[i][1]]));}
   log.push(pick(result.includes('victory')?LOG_POOLS.victoryClose:LOG_POOLS.defeatClose));
-  G.battle={territoryId:id,round:3,phase:'resolved',scores,playerSnapshot:JSON.parse(JSON.stringify(G.army.units)),enemySnapshot:e,log,result};
-  applyBattle(id,result,r3);
-  saveGame();
-  return {t,log,result,scores};
+  return {t,log,result,scores,playerSnapshot:JSON.parse(JSON.stringify(G.army.units)),enemySnapshot:e};
 }
 function showResults(out){
   const rc=RESULT_COPY[out.result];
@@ -3632,20 +3808,113 @@ function showResults(out){
   window._resultToast=rc.toast;
   updateUI();
 }
+function battleUnitCount(units){return Math.max(1,Object.values(units||{}).reduce((a,b)=>a+(b||0),0));}
+function enemyUnitCount(enemyPower){return Math.max(3,Math.round(enemyTotal(enemyPower)/2));}
+function renderBattleSquad(elId,count,enemy=false,units=null){
+  const el=document.getElementById(elId); if(!el)return;
+  const maxDots=Math.min(18,Math.max(1,count));
+  const classes=units?Object.keys(units).filter(k=>units[k]>0):[];
+  el.innerHTML=Array.from({length:maxDots},(_,i)=>{
+    const uid=classes[i%Math.max(1,classes.length)]||'swarmers';
+    const cls=enemy?'battle-enemy-dot':uid==='majors'?'major':uid==='spitters'?'spitter':uid==='scouts'?'scout':'';
+    return `<span class="battle-unit-dot ${cls}"></span>`;
+  }).join('');
+}
+function addBattleLine(msg,type='neutral'){
+  const logEl=document.getElementById('battle-event-log'); if(!logEl)return;
+  const div=document.createElement('div'); div.className=`blog-line ${type}`; div.textContent=msg;
+  logEl.appendChild(div); logEl.scrollTop=logEl.scrollHeight;
+}
+function addRedSplash(side){
+  const stage=document.getElementById('battle-stage'); if(!stage)return;
+  const s=document.createElement('div'); s.className='battle-splash';
+  s.style.left=side==='enemy'?'58%':'28%';
+  s.style.top=(36+Math.random()*18)+'%';
+  stage.appendChild(s);
+  setTimeout(()=>s.remove(),950);
+}
+function setBattleCounts(player,enemy){
+  document.getElementById('battle-player-count').textContent=fmtInt(player);
+  document.getElementById('battle-enemy-count').textContent=fmtInt(enemy);
+  const flow=window._battleFlow;
+  if(flow){renderBattleSquad('battle-player-squad',player,false,flow.out.playerSnapshot); renderBattleSquad('battle-enemy-squad',enemy,true);}
+}
+function setBattleAdvance(label,enabled){
+  const btn=document.getElementById('battle-advance');
+  btn.textContent=label; btn.disabled=!enabled;
+}
+function beginBattleBeat(title,buttonLabel,afterDelay){
+  const flow=window._battleFlow, rm=settings.reducedMotion;
+  document.getElementById('battle-phase-title').textContent=title;
+  document.getElementById('battle-stage').className='phase-charge';
+  setBattleAdvance('Watch...',false);
+  setTimeout(()=>{
+    if(!window._battleFlow)return;
+    document.getElementById('battle-stage').className='phase-clash battle-shake battle-hit-flash';
+    setTimeout(()=>document.getElementById('battle-stage').classList.remove('battle-shake','battle-hit-flash'),250);
+    setBattleAdvance(buttonLabel,true);
+    if(afterDelay)afterDelay(flow);
+  },rm?350:4800);
+}
+function advanceBattle(){
+  const flow=window._battleFlow; if(!flow||flow.waiting===false)return;
+  flow.waiting=false;
+  flow.phase++;
+  const laneNames=['Frontline clash','Swarm pressure','Ranged support'];
+  if(flow.phase===0){
+    beginBattleBeat('Ants charge the field','Tap for Round 1',()=>{flow.waiting=true; addBattleLine('The two lines surge toward each other.','neutral');});
+    return;
+  }
+  if(flow.phase>=1&&flow.phase<=3){
+    const idx=flow.phase-1, won=flow.out.scores[idx]>=1;
+    beginBattleBeat(`Round ${flow.phase}: ${laneNames[idx]}`,flow.phase<3?`Tap for Round ${flow.phase+1}`:'Tap for Results',()=>{
+      const pLoss=won?Math.ceil(flow.playerStart*.05):Math.ceil(flow.playerStart*.12);
+      const eLoss=won?Math.ceil(flow.enemyStart*.20):Math.ceil(flow.enemyStart*.08);
+      flow.playerShown=Math.max(0,flow.playerShown-pLoss);
+      flow.enemyShown=Math.max(0,flow.enemyShown-eLoss);
+      setBattleCounts(flow.playerShown,flow.enemyShown);
+      addRedSplash(won?'enemy':'player');
+      addBattleLine(flow.out.log[idx*2], 'neutral');
+      addBattleLine(flow.out.log[idx*2+1], won?'player':'enemy');
+      flow.waiting=true;
+    });
+    return;
+  }
+  G.battle={territoryId:flow.id,round:3,phase:'resolved',scores:flow.out.scores,playerSnapshot:flow.out.playerSnapshot,enemySnapshot:flow.out.enemySnapshot,log:flow.out.log,result:flow.out.result};
+  applyBattle(flow.id,flow.out.result,flow.out.scores[2]);
+  saveGame();
+  addBattleLine(flow.out.log[flow.out.log.length-1],flow.out.result.includes('victory')?'player':'enemy');
+  const out=flow.out;
+  window._battleFlow=null;
+  showResults(out);
+}
 startCombat=function(){
   const id=window._pendingNodeId; if(!id)return;
-  const t=TERRITORIES[id];
+  const out=resolveBattle(id);
   document.getElementById('combat-preview').classList.remove('active');
   document.getElementById('battle-arena').classList.add('active');
   document.getElementById('combat-results').classList.remove('active');
-  document.getElementById('battle-enemy').textContent=t.enemy;
-  document.getElementById('battle-ants-row').innerHTML=Object.keys(UNITS).map(uid=>G.army.units[uid]>0?`<span class="ant-sprite ${uid==='majors'?'major':uid==='spitters'?'spitter':'swarmer'}"></span>`:'').join('');
-  const out=resolveBattle(id); // resolve once; offline never reaches here so combat only runs on tap
-  const logEl=document.getElementById('battle-event-log'); logEl.innerHTML='';
-  const rm=settings.reducedMotion;
-  out.log.forEach((line,i)=>setTimeout(()=>{const div=document.createElement('div'); div.className='blog-line player'; div.textContent=line; logEl.appendChild(div); logEl.scrollTop=logEl.scrollHeight;},rm?0:380*i));
-  setTimeout(()=>showResults(out),rm?60:380*out.log.length+450);
+  document.getElementById('battle-enemy').textContent='';
+  document.getElementById('battle-ants-row').innerHTML='';
+  document.getElementById('battle-event-log').innerHTML='';
+  const playerStart=battleUnitCount(out.playerSnapshot), enemyStart=enemyUnitCount(out.enemySnapshot);
+  window._battleFlow={id,out,phase:-1,waiting:true,playerStart,enemyStart,playerShown:playerStart,enemyShown:enemyStart};
+  setBattleCounts(playerStart,enemyStart);
+  advanceBattle();
 };
+
+document.addEventListener('click',(e)=>{
+  const slot=e.target.closest('[data-slot]');
+  const build=e.target.closest('[data-build]');
+  const upgrade=e.target.closest('[data-upgrade]');
+  if(!slot&&!build&&!upgrade)return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  if(slot)selectBuildSlot(slot.dataset.slot);
+  else if(build)startBuild(build.dataset.build);
+  else if(upgrade)startUpgrade(upgrade.dataset.upgrade);
+},true);
+document.getElementById('battle-advance').addEventListener('click',advanceBattle);
 
 buildAllocationUI();
 buildStanceUI();
