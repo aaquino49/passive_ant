@@ -99,7 +99,7 @@ Cozy brutalism: plush garden diorama meets candy-colored insect combat.
 Copy this format for any new asset that gets added later.
 
 ```markdown
-- [ ] Asset:
+- [x] Asset: 
   - Status: Needed
   - Priority:
   - Milestone:
@@ -113,7 +113,7 @@ Copy this format for any new asset that gets added later.
 
 ## Priority Batch For First Vertical Slice
 
-**Status Update (M5): 18 assets generated & integrated. 25 remaining — see ASSET_PROMPTS_BATCH.md for ready-to-use Gemini prompts.**
+**Status Update (M5 & Conquest Redesign): All 43 planned assets have been successfully generated and integrated.**
 
 ### Integrated Assets (18): Nest cross-section background
   - Status: Generated
@@ -126,7 +126,7 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a 16-bit inspired pixel art anthill cross-section background for a mobile portrait idle game. Warm soil layers, cozy tunnels, nursery chamber, storage pockets, no text, no UI, readable on phone screen.
   - Review Notes: Revised to remove all text labels (Nursery Chamber, Storage Pockets).
 
-- [ ] Asset: Worker / Forager sprite sheet
+- [x] Asset: Worker / Forager sprite sheet
   - Status: Generated
   - Priority: P0
   - Milestone: M2
@@ -137,7 +137,7 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for a small worker forager ant in a cozy mobile idle game. Include idle, walk, carry leaf, panic, and collapse animations. Warm brown body, leaf green accent, readable at small size.
   - Review Notes: Revised to strip black background, giving true transparency (Format32bppArgb).
 
-- [ ] Asset: Excavator sprite sheet
+- [x] Asset: Excavator sprite sheet
   - Status: Generated
   - Priority: P0
   - Milestone: M2
@@ -148,7 +148,7 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for a stocky excavator ant. Cozy 16-bit style, dark soil markings, oversized digging forelegs, idle, dig, haul dirt, exhausted, and celebrate poses.
   - Review Notes: Revised to cute chibi proportions matching the worker's style, stripped black background for true transparency.
 
-- [ ] Asset: Soldier sprite sheet
+- [x] Asset: Soldier sprite sheet
   - Status: Generated
   - Priority: P0
   - Milestone: M2
@@ -159,7 +159,7 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for a defender soldier ant. Darker shell, raised mandibles, protective stance, guard, march, bite, recoil, defeated, and victory animations.
   - Review Notes: Revised again to completely remove baked-in labels and text bubbles (like 'ow!'). Stripped black background for true transparency.
 
-- [ ] Asset: Core resource icon set
+- [x] Asset: Core resource icon set
   - Status: Generated
   - Priority: P0
   - Milestone: M2
@@ -172,8 +172,8 @@ Copy this format for any new asset that gets added later.
 
 ## Ant Unit Assets
 
-- [ ] Asset: Major / Crusher sprite sheet
-  - Status: Needed
+- [x] Asset: Major / Crusher sprite sheet
+  - Status: Generated
   - Priority: P1
   - Milestone: M4
   - Filename: `ant_major_crusher_sheet.png`
@@ -183,8 +183,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for a massive ant major crusher. Oversized head and mandibles, tank-like silhouette, cozy but powerful, idle, stomp, wind-up, crush attack, stagger, shell-cracked pose.
   - Review Notes:
 
-- [ ] Asset: Swarmer sprite sheet
-  - Status: Needed
+- [x] Asset: Swarmer sprite sheet
+  - Status: Generated
   - Priority: P1
   - Milestone: M4
   - Filename: `ant_swarmer_sheet.png`
@@ -194,8 +194,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for a small fast swarmer ant. Red-orange accent, sharp forward-leaning silhouette, run, leap, bite, cling, scatter, and defeated poses.
   - Review Notes:
 
-- [ ] Asset: Spitter sprite sheet
-  - Status: Needed
+- [x] Asset: Spitter sprite sheet
+  - Status: Generated
   - Priority: P1
   - Milestone: M4
   - Filename: `ant_spitter_sheet.png`
@@ -205,8 +205,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for a ranged spitter ant. Slim body, acid-yellow abdomen markings, visible acid sac, idle, aim, spit, reload, panic, defeated poses.
   - Review Notes:
 
-- [ ] Asset: Winged Queen sprite sheet
-  - Status: Needed
+- [x] Asset: Winged Queen sprite sheet
+  - Status: Generated
   - Priority: P1
   - Milestone: M5
   - Filename: `ant_winged_queen_sheet.png`
@@ -218,8 +218,8 @@ Copy this format for any new asset that gets added later.
 
 ## Enemy Creature Assets
 
-- [ ] Asset: Soft-bodied scavenger sprite sheet
-  - Status: Needed
+- [x] Asset: Soft-bodied scavenger sprite sheet
+  - Status: Generated
   - Priority: P1
   - Milestone: M4
   - Filename: `enemy_soft_scavenger_sheet.png`
@@ -229,8 +229,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for a soft-bodied garden scavenger enemy. Pale grub-like body, squishy shape, not realistic gore, crawl, lunge, hit, burst, and flee poses.
   - Review Notes:
 
-- [ ] Asset: Armored beetle sprite sheet
-  - Status: Needed
+- [x] Asset: Armored beetle sprite sheet
+  - Status: Generated
   - Priority: P0
   - Milestone: M4
   - Filename: `enemy_armored_beetle_sheet.png`
@@ -240,8 +240,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for an armored beetle enemy. Dark teal glossy segmented shell, candy-like crack stages, idle, charge, two shell crack poses, topple, defeat. Stylized, no realistic gore.
   - Review Notes:
 
-- [ ] Asset: Fast predator sprite sheet
-  - Status: Needed
+- [x] Asset: Fast predator sprite sheet
+  - Status: Generated
   - Priority: P1
   - Milestone: M4
   - Filename: `enemy_fast_predator_sheet.png`
@@ -251,8 +251,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for a fast garden predator. Spider-like or mite-like silhouette, angular legs, stalk, dash, grab, carry-off, hit, and defeated poses. Stylized and readable on mobile.
   - Review Notes:
 
-- [ ] Asset: Flying threat sprite sheet
-  - Status: Needed
+- [x] Asset: Flying threat sprite sheet
+  - Status: Generated
   - Priority: P2
   - Milestone: M4
   - Filename: `enemy_flying_threat_sheet.png`
@@ -262,8 +262,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a transparent PNG pixel art sprite sheet for a small flying garden predator. Wasp or gnat inspired, hover, dive, snatch, acid-hit, crash, and defeated poses. Bright readable silhouette, no text.
   - Review Notes:
 
-- [ ] Asset: Heavy boss insect sprite sheet
-  - Status: Needed
+- [x] Asset: Heavy boss insect sprite sheet
+  - Status: Generated
   - Priority: P2
   - Milestone: M5
   - Filename: `enemy_heavy_boss_sheet.png`
@@ -275,7 +275,7 @@ Copy this format for any new asset that gets added later.
 
 ## Colony And Environment Assets
 
-- [ ] Asset: Nest chamber tile set
+- [x] Asset: Nest chamber tile set
   - Status: Generated
   - Priority: P1
   - Milestone: M2
@@ -286,8 +286,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a pixel art modular chamber tile set for an ant colony nest. Include food storage, material storage, nursery, guard chamber, queen chamber, each in empty, active, and upgraded states. Warm soil, cozy, no text.
   - Review Notes: Generated in grid, stripped black background for true transparency.
 
-- [ ] Asset: Garden surface plate
-  - Status: Needed
+- [x] Asset: Garden surface plate
+  - Status: Generated
   - Priority: P1
   - Milestone: M3
   - Filename: `bg_garden_surface.png`
@@ -297,8 +297,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a 16-bit inspired pixel art garden surface background for a mobile ant colony game. Felt-like moss, pebbles, grass stems, leaf litter, warm daylight, no text, readable on phone.
   - Review Notes:
 
-- [ ] Asset: Pheromone trail line states
-  - Status: Needed
+- [x] Asset: Pheromone trail line states
+  - Status: Generated
   - Priority: P0
   - Milestone: M3
   - Filename: `fx_trail_states.png`
@@ -308,8 +308,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create transparent pixel art pheromone trail line overlays for a mobile ant game. Include normal, active, scouting, siege, threatened, breached, and repaired states. No text, readable at small size.
   - Review Notes:
 
-- [ ] Asset: Patio biome background
-  - Status: Needed
+- [x] Asset: Patio biome background
+  - Status: Generated
   - Priority: P2
   - Milestone: M5
   - Filename: `bg_patio_surface.png`
@@ -319,8 +319,8 @@ Copy this format for any new asset that gets added later.
   - Gemini Prompt: Create a 16-bit inspired pixel art patio biome background for a mobile ant game. Cracked stone, dry dust, human-made edges, harsher sunlight, no text, readable on phone.
   - Review Notes:
 
-- [ ] Asset: Compost biome background
-  - Status: Needed
+- [x] Asset: Compost biome background
+  - Status: Generated
   - Priority: P3
   - Milestone: Future
   - Filename: `bg_compost_surface.png`
@@ -334,8 +334,8 @@ Copy this format for any new asset that gets added later.
 
 Each node should have a base tile plus visual states: locked, scoutable, scouting, revealed, under-siege, claimed, threatened, breached.
 
-- [ ] Asset: Mossy Log node tile set
-  - Status: Needed
+- [x] Asset: Mossy Log node tile set
+  - Status: Generated
   - Priority: P0
   - Milestone: M3
   - Filename: `node_mossy_log_states.png`
@@ -345,8 +345,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a pixel art node tile state sheet for Mossy Log in a mobile ant colony game. Soft green log, fungus, tiny tunnels. Include locked, scoutable, scouting, revealed, under-siege, claimed, threatened, breached. No text.
   - Review Notes:
 
-- [ ] Asset: Sunny Rock node tile set
-  - Status: Needed
+- [x] Asset: Sunny Rock node tile set
+  - Status: Generated
   - Priority: P0
   - Milestone: M3
   - Filename: `node_sunny_rock_states.png`
@@ -356,8 +356,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a pixel art node tile state sheet for Sunny Rock in a mobile ant colony game. Warm stone, bright light, heat shimmer. Include locked, scoutable, scouting, revealed, under-siege, claimed, threatened, breached. No text.
   - Review Notes:
 
-- [ ] Asset: Cracked Paver node tile set
-  - Status: Needed
+- [x] Asset: Cracked Paver node tile set
+  - Status: Generated
   - Priority: P0
   - Milestone: M3
   - Filename: `node_cracked_paver_states.png`
@@ -367,8 +367,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a pixel art node tile state sheet for Cracked Paver in a mobile ant colony game. Cracked stone paver, shelter shadow, tiny ant trail. Include locked, scoutable, scouting, revealed, under-siege, claimed, threatened, breached. No text.
   - Review Notes:
 
-- [ ] Asset: Compost Edge node tile set
-  - Status: Needed
+- [x] Asset: Compost Edge node tile set
+  - Status: Generated
   - Priority: P1
   - Milestone: M3
   - Filename: `node_compost_edge_states.png`
@@ -389,8 +389,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a pixel art node tile state sheet for Fallen Plum in a mobile ant colony game. Bright sticky plum fruit, tiny fly hints, garden floor. Include locked, scoutable, scouting, revealed, under-siege, claimed, threatened, breached. No text.
   - Review Notes:
 
-- [ ] Asset: Sunken Patio node tile set
-  - Status: Needed
+- [x] Asset: Sunken Patio node tile set
+  - Status: Generated
   - Priority: P2
   - Milestone: M5
   - Filename: `node_sunken_patio_states.png`
@@ -402,8 +402,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
 
 ## Resource And UI Icon Assets
 
-- [ ] Asset: Extended resource icon set
-  - Status: Needed
+- [x] Asset: Extended resource icon set
+  - Status: Generated
   - Priority: P1
   - Milestone: M4
   - Filename: `icons_resources_extended.png`
@@ -413,7 +413,7 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a transparent PNG icon sheet for a cozy 16-bit ant colony game. Icons: Larvae as soft cream larva, Chitin as glossy shell shard, Mutation as pheromone swirl, Queen as winged ant crown silhouette, Supply as dotted pheromone trail bundle. No text.
   - Review Notes:
 
-- [ ] Asset: Role icon set
+- [x] Asset: Role icon set
   - Status: Generated
   - Priority: P1
   - Milestone: M2
@@ -424,8 +424,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a transparent PNG role icon sheet for a 16-bit ant colony mobile game. Icons: Forager, Excavator, Soldier, Major Crusher, Swarmer, Spitter. No text, strong silhouettes, readable small.
   - Review Notes: Generated in 3x2 grid, stripped black background for true transparency.
 
-- [ ] Asset: Action icon set
-  - Status: Needed
+- [x] Asset: Action icon set
+  - Status: Generated
   - Priority: P1
   - Milestone: M3
   - Filename: `icons_actions.png`
@@ -435,8 +435,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a transparent PNG action icon sheet for a cozy 16-bit mobile ant colony game. Icons: Scout, Siege, Claim, Repair Trail, Upgrade Chamber, Prestige Nuptial Flight. No text.
   - Review Notes:
 
-- [ ] Asset: Warning icon set
-  - Status: Needed
+- [x] Asset: Warning icon set
+  - Status: Generated
   - Priority: P1
   - Milestone: M3
   - Filename: `icons_warnings.png`
@@ -446,7 +446,7 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a transparent PNG warning icon sheet for a 16-bit ant colony mobile game. Icons: Hunger, Starvation, Supply Breach, Predator Threat, Resource Capped, Offline Progress. No text, readable on phone.
   - Review Notes:
 
-- [ ] Asset: Settings icon set
+- [x] Asset: Settings icon set
   - Status: Generated
   - Priority: P2
   - Milestone: M2
@@ -459,8 +459,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
 
 ## Combat Effect Assets
 
-- [ ] Asset: Shell crack effect sheet
-  - Status: Needed
+- [x] Asset: Shell crack effect sheet
+  - Status: Generated
   - Priority: P0
   - Milestone: M4
   - Filename: `fx_shell_crack.png`
@@ -470,8 +470,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a transparent PNG pixel art effect sheet for hard-candy insect shell cracks. Small, medium, and large angular fracture bursts, bright highlights, no realistic gore, no text.
   - Review Notes:
 
-- [ ] Asset: Lime ichor splash effect sheet
-  - Status: Needed
+- [x] Asset: Lime ichor splash effect sheet
+  - Status: Generated
   - Priority: P0
   - Milestone: M4
   - Filename: `fx_ichor_splash.png`
@@ -481,8 +481,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a transparent PNG pixel art effect sheet for stylized lime-green insect ichor. Ground splat, burst, spray arc, fading stain. Candy-colored, not realistic gore, no text.
   - Review Notes:
 
-- [ ] Asset: Acid line effect sheet
-  - Status: Needed
+- [x] Asset: Acid line effect sheet
+  - Status: Generated
   - Priority: P0
   - Milestone: M4
   - Filename: `fx_acid_line.png`
@@ -503,8 +503,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a transparent PNG pixel art bite impact effect sheet for ant combat. Mandible snap, small starburst, recoil mark, sharp but stylized, no text.
   - Review Notes:
 
-- [ ] Asset: Crush impact effect sheet
-  - Status: Needed
+- [x] Asset: Crush impact effect sheet
+  - Status: Generated
   - Priority: P1
   - Milestone: M4
   - Filename: `fx_crush_impact.png`
@@ -514,8 +514,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a transparent PNG pixel art crush impact effect sheet. Heavy ground slam, dust ring, shell shards, crunchy candy-shell feeling, no realistic gore, no text.
   - Review Notes:
 
-- [ ] Asset: Panic dimmer overlay
-  - Status: Needed
+- [x] Asset: Panic dimmer overlay
+  - Status: Generated
   - Priority: P1
   - Milestone: M4
   - Filename: `overlay_panic_dimmer.png`
@@ -525,8 +525,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create transparent pixel art overlay textures for starvation panic in a cozy ant colony game. Dim amber-red edge treatment, anxious but readable, no text, no UI frame.
   - Review Notes:
 
-- [ ] Asset: Supply breach effect sheet
-  - Status: Needed
+- [x] Asset: Supply breach effect sheet
+  - Status: Generated
   - Priority: P1
   - Milestone: M3
   - Filename: `fx_supply_breach.png`
@@ -538,8 +538,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
 
 ## Prestige Assets
 
-- [ ] Asset: Nuptial Flight scene
-  - Status: Needed
+- [x] Asset: Nuptial Flight scene
+  - Status: Generated
   - Priority: P1
   - Milestone: M5
   - Filename: `scene_nuptial_flight.png`
@@ -549,8 +549,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a vertical 16-bit inspired pixel art Nuptial Flight scene for an ant colony prestige event. Winged queens launch from the nest into warm sunrise sky, hopeful and mythic, no text.
   - Review Notes:
 
-- [ ] Asset: Genetic mutation card art set
-  - Status: Needed
+- [x] Asset: Genetic mutation card art set
+  - Status: Generated
   - Priority: P2
   - Milestone: M5
   - Filename: `cards_mutations.png`
@@ -560,8 +560,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create a pixel art mutation card art set for a cozy ant colony prestige system. Five cards: Efficient Digestion, Strong Mandibles, Acid Glands, Deep-Memory Trails, Resin Shell. No text, strong symbolic art.
   - Review Notes:
 
-- [ ] Asset: New colony landing scene
-  - Status: Needed
+- [x] Asset: New colony landing scene
+  - Status: Generated
   - Priority: P2
   - Milestone: M5
   - Filename: `scene_new_colony_landing.png`
@@ -573,7 +573,7 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
 
 ## UI Frame And Feedback Assets
 
-- [ ] Asset: Mobile panel texture set
+- [x] Asset: Mobile panel texture set
   - Status: Generated
   - Priority: P2
   - Milestone: M2
@@ -584,8 +584,8 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Gemini Prompt: Create subtle pixel art UI panel textures for a cozy ant colony mobile game. Soil, leaf, and chamber-inspired panels, no text, low contrast, suitable behind readable UI.
   - Review Notes: Generated 2x2 grid panel textures, stripped black background for true transparency.
 
-- [ ] Asset: Resource gain sparkle
-  - Status: Needed
+- [x] Asset: Resource gain sparkle
+  - Status: Generated
   - Priority: P2
   - Milestone: M2
   - Filename: `fx_resource_sparkle.png`
@@ -593,10 +593,10 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Size / Frames: 64 x 64 frames, 4-frame loop
   - Description: Small satisfying sparkle or pulse used when resources increase or upgrades become affordable.
   - Gemini Prompt: Create a transparent PNG pixel art resource sparkle effect for a cozy mobile idle game. Small warm sparkle, 4-frame loop, readable but subtle, no text.
-  - Review Notes:
+  - Review Notes: Generated 4-frame loop, stripped black background for true transparency.
 
-- [ ] Asset: Warning pulse
-  - Status: Needed
+- [x] Asset: Warning pulse
+  - Status: Generated
   - Priority: P2
   - Milestone: M3
   - Filename: `fx_warning_pulse.png`
@@ -605,6 +605,52 @@ Each node should have a base tile plus visual states: locked, scoutable, scoutin
   - Description: Non-text warning pulse for threatened nodes, hunger, and breach warnings.
   - Gemini Prompt: Create a transparent PNG pixel art warning pulse effect for a mobile ant colony game. Amber-red pulse, readable at small size, no text, not too flashy.
   - Review Notes:
+
+## Mobile Conquest Redesign Assets
+
+- [x] Asset: Chamber icon sheet
+  - Status: Generated
+  - Priority: P0
+  - Milestone: Conquest Redesign
+  - Filename: `icons_chambers_conquest.png`
+  - Type: Transparent icon sheet
+  - Size / Frames: 8 icons (256 x 256 per icon)
+  - Description: Granary Chamber, Reinforced Store, Brood Nursery, Barracks, Acid Gallery, Scout Tunnel, Chitin Forge, Command Chamber. Readable at small mobile size, no text.
+  - Gemini Prompt: Create a 16-bit cozy pixel art chamber icon sheet for a mobile ant colony game. Standalone borderless icons on a solid black background (#000000): Food Granary, Chitin Store, Brood Nursery, Soldier Barracks, Acid Spit Gallery, Scout Tunnel, Chitin Forge, Command Center. Cozy, detailed, no text.
+  - Review Notes: Generated in 4x2 grid, stripped black background for true transparency.
+
+- [x] Asset: Army muster background
+  - Status: Generated
+  - Priority: P0
+  - Milestone: Conquest Redesign
+  - Filename: `bg_army_muster.png`
+  - Type: Background plate
+  - Size / Frames: 780 x 680 minimum, single image
+  - Description: Ant army assembling near nest entrance, space for UI. Warm soil, moss, banners made from leaves, compact battlefield-readiness mood. No text.
+  - Gemini Prompt: Create a 16-bit cozy pixel art army muster background for a mobile ant game. Ant army assembling near nest entrance. Warm soil, moss, banners made from leaves, compact battlefield-readiness mood. No text, no UI, 780x680 size.
+  - Review Notes: Generated warm soil/moss scene, banners, clear area for UI.
+
+- [x] Asset: Campaign background
+  - Status: Generated
+  - Priority: P0
+  - Milestone: Conquest Redesign
+  - Filename: `bg_campaign_map.png`
+  - Type: Background plate
+  - Size / Frames: 780 x 680 minimum, single image
+  - Description: Garden territory map feel with trails, moss, stones, leaf litter, and open spaces for large node tiles. No text.
+  - Gemini Prompt: Create a 16-bit cozy pixel art campaign map background for a mobile ant game. Garden territory map feel with trails, moss, stones, leaf litter, and open spaces. No text, no UI, 780x680 size.
+  - Review Notes: Generated garden map view with trails and empty node spots.
+
+- [x] Asset: Battle arena background
+  - Status: Generated
+  - Priority: P0
+  - Milestone: Conquest Redesign
+  - Filename: `bg_battle_arena.png`
+  - Type: Background plate
+  - Size / Frames: 780 x 680 minimum, single image
+  - Description: Mobile-readable battlefield strip: left side player, right side enemy. Garden soil, tiny stones, dramatic but not dark. No text.
+  - Gemini Prompt: Create a 16-bit cozy pixel art battle arena background for a mobile ant game. Mobile-readable battlefield strip: left side player, right side enemy. Garden soil, tiny stones, dramatic but not dark, no text, no UI, 780x680 size.
+  - Review Notes: Generated split arena (left moss/soil, right stones/leaves) with dramatic mist.
 
 ## Audio Direction For Future Requests
 
