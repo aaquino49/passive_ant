@@ -793,7 +793,7 @@ let activeTab = "nest";
 let lastFrame = performance.now();
 let renderClock = 0;
 let toastTimer = null;
-let G = loadGame() || makeState();
+let G = normalizeState(loadGame() || makeState());
 
 function makeState() {
   const territories = {};
@@ -849,6 +849,73 @@ function migrate(raw) {
   s.evolution.unlocked = Array.isArray(raw?.evolution?.unlocked) ? raw.evolution.unlocked : [];
   s.session = Object.assign(fresh.session, raw?.session || {});
   s.stats = Object.assign(fresh.stats, raw?.stats || {});
+  s.saveVersion = SAVE_VERSION;
+  return normalizeState(s);
+}
+
+function numericRecord(source, fallback) {
+  const out = {};
+  Object.keys(fallback).forEach((key) => {
+    const value = Number(source?.[key]);
+    out[key] = Number.isFinite(value) ? value : fallback[key];
+  });
+  return out;
+}
+
+function normalizeState(source) {
+  const fresh = makeState();
+  const s = source || fresh;
+  s.resources = numericRecord(s.resources, fresh.resources);
+  s.caps = numericRecord(s.caps, fresh.caps);
+  s.population = numericRecord(s.population, fresh.population);
+  s.assigned = numericRecord(s.assigned, fresh.assigned);
+  s.session = Object.assign(fresh.session, s.session || {});
+  s.stats = Object.assign(fresh.stats, s.stats || {});
+
+  s.buildings = Object.assign(fresh.buildings, s.buildings || {});
+  const incomingSlots = Array.isArray(s.buildings.slots) ? s.buildings.slots : [];
+  s.buildings.slots = fresh.buildings.slots.map((base, index) => {
+    const slot = Object.assign({}, base, incomingSlots[index] || {});
+    if (!["empty", "locked", "building", "complete"].includes(slot.status)) slot.status = base.status;
+    if (slot.status !== "empty" && slot.status !== "locked" && !CHAMBERS[slot.buildingId]) {
+      slot.buildingId = null;
+      slot.status = base.status;
+    }
+    slot.level = Math.max(0, Number(slot.level) || 0);
+    slot.buildTimer = Math.max(0, Number(slot.buildTimer) || 0);
+    slot.buildDuration = Math.max(0, Number(slot.buildDuration) || 0);
+    if (slot.status === "building" && (!slot.buildingId || slot.buildDuration <= 0)) slot.status = "empty";
+    return slot;
+  });
+  if (!s.buildings.slots.some((slot) => slot.id === s.buildings.activeBuildSlotId)) {
+    s.buildings.activeBuildSlotId = s.buildings.slots.find((slot) => slot.status !== "locked")?.id || "slot_1";
+  }
+
+  s.army = Object.assign(fresh.army, s.army || {});
+  s.army.units = numericRecord(s.army.units, fresh.army.units);
+  s.army.wounded = numericRecord(s.army.wounded, fresh.army.wounded);
+  s.army.trainingQueue = Array.isArray(s.army.trainingQueue)
+    ? s.army.trainingQueue.filter((item) => UNITS[item?.unitId]).map((item) => ({
+      unitId: item.unitId,
+      timer: Math.max(0, Number(item.timer) || UNITS[item.unitId].time),
+      duration: Math.max(1, Number(item.duration) || UNITS[item.unitId].time)
+    }))
+    : [];
+  if (!["guarded", "balanced", "aggressive"].includes(s.army.formation)) s.army.formation = "balanced";
+
+  s.campaign = Object.assign(fresh.campaign, s.campaign || {});
+  s.campaign.territories = Object.keys(TERRITORIES).reduce((all, id) => {
+    all[id] = Object.assign({}, fresh.campaign.territories[id], s.campaign.territories?.[id] || {});
+    all[id].unlocked = Boolean(all[id].unlocked);
+    all[id].claimed = Boolean(all[id].claimed);
+    return all;
+  }, {});
+  if (!TERRITORIES[s.campaign.selectedTerritoryId]) s.campaign.selectedTerritoryId = "sunny_rock";
+
+  s.evolution = Object.assign(fresh.evolution, s.evolution || {});
+  s.evolution.unlocked = Array.isArray(s.evolution.unlocked)
+    ? s.evolution.unlocked.filter((id) => MUTATIONS[id])
+    : [];
   s.saveVersion = SAVE_VERSION;
   return s;
 }
@@ -1363,18 +1430,28 @@ function switchTab(tab) {
 }
 
 function renderAll() {
-  updateCaps();
-  renderNest();
-  renderBuild();
-  renderArmy();
-  renderMap();
-  renderEvolve();
-  document.getElementById("nest-badge").textContent = `${fmt(totalPop())} ants`;
-  document.getElementById("build-badge").textContent = G.buildings.slots.some((s) => s.status === "building") ? "Building" : "Ready";
-  document.getElementById("army-badge").textContent = `Power ${fmt1(armyPower())}`;
-  document.getElementById("map-badge").textContent = `${claimedCount()} held`;
-  document.getElementById("evolve-badge").textContent = `${G.evolution.unlocked.length} active`;
-  bindActions();
+  try {
+    G = normalizeState(G);
+    updateCaps();
+    renderNest();
+    renderBuild();
+    renderArmy();
+    renderMap();
+    renderEvolve();
+    document.getElementById("nest-badge").textContent = `${fmt(totalPop())} ants`;
+    document.getElementById("build-badge").textContent = G.buildings.slots.some((s) => s.status === "building") ? "Building" : "Ready";
+    document.getElementById("army-badge").textContent = `Power ${fmt1(armyPower())}`;
+    document.getElementById("map-badge").textContent = `${claimedCount()} held`;
+    document.getElementById("evolve-badge").textContent = `${G.evolution.unlocked.length} active`;
+    bindActions();
+  } catch (err) {
+    console.error("Render failed; resetting repaired state", err);
+    G = makeState();
+    saveGame();
+    document.querySelectorAll(".page-body").forEach((body) => {
+      body.innerHTML = `<div class="action-card"><div class="line-main">Colony recovered</div><div class="line-sub">A damaged save was repaired. Use the menu below to continue.</div></div>`;
+    });
+  }
 }
 
 function bindActions() {
