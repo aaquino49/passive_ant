@@ -1096,26 +1096,23 @@
   .nest-crawling-ant {
     display: inline-block;
     width: 24px; height: 24px;
-    background-size: 144px 144px;
+    background-image: url('assets/icons_roles.png');
+    background-size: 300% 300%;
     image-rendering: pixelated;
     background-repeat: no-repeat;
   }
   .nest-crawling-ant.forager {
-    background-image: url('assets/ant_worker_forager_sheet.png');
-    animation: playAntSwarmer 0.6s steps(6) infinite;
+    background-position: 0% 0%;
   }
   .nest-crawling-ant.excavator {
-    background-image: url('assets/ant_excavator_sheet.png');
-    animation: playAntSwarmer 0.8s steps(6) infinite;
+    background-position: 50% 0%;
   }
   .nest-crawling-ant.soldier {
-    background-image: url('assets/ant_soldier_sheet.png');
-    animation: playAntSwarmer 0.7s steps(6) infinite;
+    background-position: 100% 0%;
   }
   .nest-crawling-ant.nurse {
-    background-image: url('assets/ant_worker_forager_sheet.png');
+    background-position: 0% 0%;
     filter: sepia(0.5) hue-rotate(90deg);
-    animation: playAntSwarmer 0.8s steps(6) infinite;
   }
   
   @keyframes crawlLeftRight {
@@ -1327,14 +1324,14 @@
 
   /* (legacy immersive-viewport styles removed — replaced by #colony-scene above) */
   /* Mobile conquest shell */
-  #top-bar { flex-direction: column; gap: 5px; padding: 5px 7px; }
-  #res-pills { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
-  .res-pill { flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; min-height: 44px; }
-  .rp-icon { font-size: 13px; line-height: 1; }
+  #top-bar { flex-direction: column; gap: 6px; padding: 7px 8px 6px; background: rgba(33,23,15,.96); box-shadow: 0 2px 12px rgba(0,0,0,.28); z-index: 5; }
+  #res-pills { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+  .res-pill { flex-direction: column; align-items: center; gap: 1px; padding: 5px 3px; min-height: 46px; background: rgba(255,250,240,.09); border-color: rgba(255,255,255,.12); }
+  .rp-icon { display:none; }
   .rp-text { text-align: center; width: 100%; }
   .rp-val { font-size: 13px; }
   .rp-sub { font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #speed-group { align-self: stretch; justify-content: center; }
+  #speed-group { align-self: stretch; justify-content: center; gap: 6px; }
   .tb-btn, #btn-settings-tb {
     min-width: 44px;
     min-height: 44px;
@@ -1343,20 +1340,43 @@
     justify-content: center;
   }
   #btn-settings-tb { width: 44px; padding: 6px 0; }
-  #viewport { height: 27vh; max-height: 230px; min-height: 168px; padding: 8px; }
+  #viewport { height: 38vh; max-height: 310px; min-height: 220px; padding: 0; }
   #colony-scene, #map-viewport { height: 100%; }
   #map-viewport { height: 100%; }
-  #tab-bar { order: 4; }
-  .tab-btn { min-height: 48px; padding: 8px 0 7px; font-size: 13px; }
-  #deck { min-height: 0; }
-  #deck-scroll { padding: 8px; gap: 0; }
-  .tab-panel { display: none; flex: 1; min-height: 0; overflow: hidden; }
+  #tab-bar {
+    order: 5;
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+    border-top: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 -8px 20px rgba(0,0,0,.25);
+  }
+  .tab-btn { min-height: 58px; padding: 6px 0 7px; font-size: 0; border-bottom: none; border-top: 3px solid transparent; }
+  .tab-btn::before { display:block; font-size:20px; line-height:1.1; margin-bottom:3px; }
+  .tab-btn::after { display:block; font-size:10px; font-weight:900; line-height:1; }
+  .tab-btn[data-tab="nest"]::before { content:"\2302"; }
+  .tab-btn[data-tab="nest"]::after { content:"Nest"; }
+  .tab-btn[data-tab="build"]::before { content:"\25A6"; }
+  .tab-btn[data-tab="build"]::after { content:"Build"; }
+  .tab-btn[data-tab="army"]::before { content:"\2694"; }
+  .tab-btn[data-tab="army"]::after { content:"Army"; }
+  .tab-btn[data-tab="campaign"]::before { content:"\25CE"; }
+  .tab-btn[data-tab="campaign"]::after { content:"Map"; }
+  .tab-btn[data-tab="evolution"]::before { content:"\2726"; }
+  .tab-btn[data-tab="evolution"]::after { content:"Evolve"; }
+  .tab-btn.active { border-top-color: var(--amber); border-bottom-color: transparent; background: rgba(216,154,74,.12); }
+  #deck { min-height: 0; background: #f4eadc; }
+  #deck-scroll { padding: 8px 8px 10px; gap: 0; }
+  .tab-panel { display: none; flex: 1; min-height: 0; overflow-y: auto; }
   .tab-panel.active { display: flex; flex-direction: column; gap: 7px; }
   .tab-panel:not(.active) { display: none !important; }
   .tab-panel.active { display: flex !important; }
   .compact-grid { display: grid; gap: 6px; }
-  .two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .panel-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; min-width: 0; }
+  .two-col { grid-template-columns: 1fr; }
+  .panel-card { background: var(--surface); border: 1px solid rgba(95,72,48,.28); border-radius: 8px; padding: 9px; min-width: 0; box-shadow: 0 1px 0 rgba(255,255,255,.75); }
   .tab-visual {
     height: 100%;
     width: 100%;
@@ -1373,7 +1393,7 @@
   .tab-visual-body { padding: 10px; color: #fff7e8; text-shadow: 0 1px 2px rgba(0,0,0,.65); }
   .tab-visual .mini-title { color: rgba(255,247,232,.82); margin-bottom: 3px; }
   .tab-visual .line-main, .tab-visual .line-sub { color: #fff7e8; white-space: normal; }
-  .loop-tracker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; flex-shrink: 0; grid-column: 1 / -1; }
+  .loop-tracker { display: none; }
   .loop-step { min-height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 9px; font-weight: 900; color: var(--text-dim); }
   .loop-step.active { background: var(--amber); border-color: var(--amber); color: var(--dark); }
   .loop-step.done { background: #eef6ec; border-color: #b7d492; color: #3d7834; }
@@ -1381,11 +1401,11 @@
   .action-card.critical { border-color: var(--red); background: #fdeae6; }
   .action-card button { margin-top: 7px; width: 100%; }
   .mini-title { font-size: 10px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.04em; font-weight: 800; margin-bottom: 4px; }
-  .metric-row, .unit-row, .territory-row { display: flex; align-items: center; gap: 7px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 7px; background: var(--surface); }
+  .metric-row, .unit-row, .territory-row { display: flex; align-items: center; gap: 8px; min-height: 48px; border: 1px solid rgba(95,72,48,.24); border-radius: 8px; padding: 7px 8px; background: var(--surface); }
   .metric-row .grow, .unit-row .grow, .territory-row .grow { flex: 1; min-width: 0; }
-  .line-main { font-size: 12px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .line-sub { font-size: 10px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .btn-small { min-width: 58px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 11px; font-weight: 800; }
+  .line-main { font-size: 13px; font-weight: 850; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.18; }
+  .line-sub { font-size: 11px; color: var(--text-dim); white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.2; }
+  .btn-small { min-width: 64px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 11px; font-weight: 850; }
   .btn-close { min-height: 44px; }
   .btn-small.ready { background: var(--amber); border-color: var(--amber); color: var(--dark); }
   .btn-small.danger { background: var(--red); border-color: var(--red); color: white; }
@@ -1393,7 +1413,7 @@
   .btn-small.info { background: #eef6ec; border-color: #b7d492; color: #3d7834; }
   .res-pill.critical { background: #4a211b; border-color: var(--red); }
   .res-pill.critical .rp-val, .res-pill.critical .rp-sub { color: #ffd4cb; }
-  .slot-grid { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 6px; min-height: 0; }
+  .slot-grid { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, 76px); gap: 6px; min-height: 0; }
   .slot-card { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: #fffaf0; padding: 7px; min-height: 0; }
   .slot-card.locked { opacity: 0.55; background: #ece3d6; }
   .slot-card.building { border-color: var(--amber); }
@@ -1403,8 +1423,8 @@
   .slot-card .slot-state { font-size: 9px; color: var(--text-dim); margin-top: 3px; }
   .timer-mini { height: 5px; background: #eadcc8; border-radius: 99px; overflow: hidden; margin-top: 5px; }
   .timer-mini > div { height: 100%; background: var(--amber); }
-  #chamber-picker { flex-shrink: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
-  .picker-btn { min-height: 44px; padding: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: 9px; font-weight: 800; color: var(--text); overflow: hidden; }
+  #chamber-picker { flex-shrink: 0; display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .picker-btn { min-height: 48px; padding: 7px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: 11px; font-weight: 850; color: var(--text); overflow: hidden; text-align:left; }
   .picker-btn:disabled { opacity: 0.38; }
   #army-list { display: grid; gap: 5px; }
   .unit-role { display: inline-block; color: var(--text); font-weight: 800; }
@@ -1417,7 +1437,7 @@
   .nest-assign-row { display: grid; grid-template-columns: minmax(0,1fr) 44px 32px 44px; align-items: center; gap: 5px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 5px 6px; }
   .nest-assign-main { min-width: 0; }
   .nest-assign-count { font-size: 16px; font-weight: 900; text-align: center; font-variant-numeric: tabular-nums; }
-  #campaign-list { flex: 1; min-height: 0; display: grid; gap: 5px; }
+  #campaign-list { flex: 1; min-height: 0; display: grid; gap: 6px; }
   .territory-row.claimed { border-color: #b7d492; background: #f3f8ed; }
   .territory-row.locked { opacity: 0.48; }
   #battle-log-inline { flex-shrink: 0; max-height: 52px; overflow: hidden; display: grid; gap: 4px; }
@@ -1426,7 +1446,7 @@
     #top-bar { gap: 4px; padding: 4px 7px; }
     .res-pill { min-height: 40px; padding: 3px 2px; }
     .tb-btn, #btn-settings-tb { min-height: 40px; }
-    #viewport { height: 23vh; min-height: 132px; }
+    #viewport { height: 32vh; min-height: 180px; }
     .panel-card { padding: 6px; }
     .metric-row, .unit-row, .territory-row { min-height: 42px; padding: 5px 6px; }
     .line-main { font-size: 11px; }
@@ -4082,10 +4102,10 @@ function renderVisual() {
     }
   }
   scene.innerHTML = `
-    <div class="panel-card" style="position:relative; width:100%; height:100%; background-image:linear-gradient(rgba(255,250,240,.75),rgba(255,250,240,.75)),url('${img}'); background-size:cover; background-position:center; display:flex; align-items:end; overflow:hidden;">
-      <div style="z-index:2; padding:10px;">
+    <div class="tab-visual" style="position:relative; width:100%; height:100%; background-image:linear-gradient(180deg,rgba(22,14,8,.06),rgba(22,14,8,.55)),url('${img}'); background-size:cover; background-position:center; display:flex; align-items:flex-end; overflow:hidden;">
+      <div class="tab-visual-body" style="z-index:2;">
         <div class="mini-title">${activeTab}</div>
-        <div class="line-main">${fmtInt(totalPop(G))} ants, ${claimedCount()} claimed</div>
+        <div class="line-main">${fmtInt(totalPop(G))} ants · ${claimedCount()} claimed</div>
         <div class="line-sub">${activeText()}</div>
       </div>
       <div class="crawling-container" style="position:absolute; inset:0; pointer-events:none; z-index:1;">
@@ -4197,7 +4217,11 @@ function renderStatus(){const strip=document.getElementById('status-strip'); if(
 function renderNest(){
   const r=getNetRates(G), b=bonuses(), el=document.getElementById('nest-summary'), action=nextAction();
   const tribute=`+${fmt1(r.tribute.food)}/s food, +${fmt1(r.tribute.materials)}/s mats, +${fmt1(r.tribute.chitin)}/s chitin${G.campaign.aphids?` (${fmtInt(G.campaign.aphids)} aphids)`:''}`;
-  if(el)el.innerHTML=renderLoopTracker()+[['Food Flow',`${r.netFood>=0?'+':''}${fmt1(r.netFood)}/s net`],['Timers',activeText()],['Territory',`${claimedCount()} claimed, food x${fmt1(b.foodMult)}`],['Tribute',tribute],['Idle Ants',`${fmtInt(unassigned(G))} available`]].map(x=>`<div class="metric-row"><div class="grow"><div class="line-main">${x[0]}</div><div class="line-sub">${x[1]}</div></div></div>`).join('')+renderNestAssignments();
+  if(el)el.innerHTML=[
+    ['Colony',`${G.status}. ${fmtInt(unassigned(G))} idle / cap ${popCap(G)}`],
+    ['Production',`Food ${r.netFood>=0?'+':''}${fmt1(r.netFood)}/s · Mats +${fmt1(r.matsRate)}/s · Chitin +${fmt1(r.chitinRate)}/s`],
+    ['Territory',`${claimedCount()} claimed · Food x${fmt1(b.foodMult)} · Tribute ${tribute}`]
+  ].map(x=>`<div class="metric-row"><div class="grow"><div class="line-main">${x[0]}</div><div class="line-sub">${x[1]}</div></div></div>`).join('')+renderNestAssignments();
   const card=document.getElementById('next-action')?.closest('.panel-card');
   if(card)card.className=`panel-card action-card ${action.kind==='critical'?'critical':''}`;
   const n=document.getElementById('next-action'); if(n)n.innerHTML=`<div>${action.label}</div><div class="line-sub">${action.detail}${action.tab===activeTab?'':`<button class="btn-small ready" data-next-tab="${action.tab}">Go to ${action.tab==='nest'?'Nest':action.tab[0].toUpperCase()+action.tab.slice(1)}</button>`}</div>`;
