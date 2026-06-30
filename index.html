@@ -1485,6 +1485,7 @@
     <button class="tab-btn" data-tab="build">Build</button>
     <button class="tab-btn" data-tab="army">Army</button>
     <button class="tab-btn" data-tab="campaign">Campaign</button>
+    <button class="tab-btn" data-tab="evolution">Evolve</button>
   </div>
 
   <div id="deck">
@@ -1547,6 +1548,8 @@
           <div id="readiness-line" class="line-sub" style="margin-top:5px;"></div>
         </div>
         <div id="army-list"></div>
+        <div id="champion-list"></div>
+        <div id="adaptation-list"></div>
       </div>
 
       <div id="map-deck" class="tab-panel" data-panel="campaign">
@@ -1558,6 +1561,14 @@
         <div id="campaign-list"></div>
         <div id="battle-log-inline"></div>
         <div id="map-node-detail" style="display:none;"></div>
+      </div>
+
+      <div id="evolution-panel" class="tab-panel" data-panel="evolution">
+        <div class="panel-card">
+          <div class="mini-title">Evolution</div>
+          <div class="line-sub">Spend pheromones on colony memory and recipes.</div>
+        </div>
+        <div id="evolution-list"></div>
       </div>
     </div>
   </div>
@@ -1621,6 +1632,7 @@
     <div id="cp-details"></div>
     <div class="mini-title">Formation</div>
     <div id="preview-formation-buttons"></div>
+    <div id="muster-controls"></div>
     <div class="cp-outcome" id="cp-outcome"></div>
     <div class="cp-actions">
       <button class="btn-close" id="btn-cancel-combat">Retreat</button>
@@ -3721,17 +3733,48 @@ window.addEventListener('beforeunload', () => saveGame());
 //  STARTUP
 // ═══════════════════════════════════════════════════════════
 // Mobile conquest redesign overrides.
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 const CHAMBERS = {
-  granary:{name:'Granary Chamber',cost:{materials:20},time:20,desc:'+80 Food cap'},
-  store:{name:'Reinforced Store',cost:{materials:20},time:20,desc:'+60 Materials cap'},
-  nursery:{name:'Brood Nursery',cost:{materials:35},time:45,desc:'+25% growth'},
-  barracks:{name:'Barracks',cost:{materials:30},time:45,desc:'Unlock Major training'},
-  acid:{name:'Acid Gallery',cost:{materials:55,chitin:10},time:90,desc:'Unlock Spitters'},
-  scout:{name:'Scout Tunnel',cost:{materials:40},time:60,desc:'Unlock Scouts'},
-  forge:{name:'Chitin Forge',cost:{materials:75,chitin:25},time:120,desc:'+20% army armor'},
-  command:{name:'Command Chamber',cost:{materials:100,chitin:40},time:180,desc:'Advanced formations'}
+  granary:{name:'Granary Chamber',comboTag:'granary',cost:{materials:20},time:20,desc:'+80 Food cap'},
+  store:{name:'Reinforced Store',comboTag:'store',cost:{materials:20},time:20,desc:'+60 Materials cap'},
+  nursery:{name:'Brood Nursery',comboTag:'nursery',cost:{materials:35},time:45,desc:'+25% growth'},
+  barracks:{name:'Barracks',comboTag:'barracks',cost:{materials:30},time:45,desc:'Unlock Major training'},
+  acid:{name:'Acid Gallery',comboTag:'acid',cost:{materials:55,chitin:10},time:90,desc:'Unlock Spitters'},
+  scout:{name:'Scout Tunnel',comboTag:'scout',cost:{materials:40},time:60,desc:'Unlock Scouts'},
+  forge:{name:'Chitin Forge',comboTag:'forge',cost:{materials:75,chitin:25},time:120,desc:'+20% army armor'},
+  command:{name:'Command Chamber',comboTag:'command',cost:{materials:100,chitin:40},time:180,desc:'Advanced formations'}
 };
+const SLOT_ADJACENCY = {
+  slot_1:['slot_2','slot_4'],
+  slot_2:['slot_1','slot_3','slot_5'],
+  slot_3:['slot_2','slot_6'],
+  slot_4:['slot_1','slot_5'],
+  slot_5:['slot_2','slot_4','slot_6'],
+  slot_6:['slot_3','slot_5']
+};
+const COMBOS = {
+  well_fed_brood:{name:'Well-Fed Brood',tags:['nursery','granary'],effect:{growthMult:.15},hint:'+15% growth'},
+  deep_stores:{name:'Deep Stores',tags:['granary','store'],effect:{foodCapMult:.10,matsCapMult:.10},hint:'+10% food and mats cap'},
+  hardened_glands:{name:'Hardened Glands',tags:['acid','forge'],effect:{rangedMult:.10},hint:'+10% ranged power'},
+  war_foundry:{name:'War Foundry',tags:['barracks','forge'],effect:{armorBonus:.10},hint:'+10% army armor'},
+  signal_network:{name:'Signal Network',tags:['scout','command'],effect:{supportMult:.15},hint:'+15% support lane'}
+};
+const CHAMPION_NAMES = ['Mandible of East Trail','Warden of Cracked Paver','Amber-Shell Praetorian','Keeper of Mossy Log','Acid Voice','Suntrail Bulwark','Plumfall Sentinel','Deep Nest Fang'];
+const CHAMPION_TRAITS = ['Acid Burst','Bulwark','Frenzy'];
+const ADAPTATIONS = {
+  mandible:{name:'Mandible Plating',lane:'front',unlock:'barracks',cost:{chitin:12},step:.12,desc:'+front lane'},
+  caustic:{name:'Caustic Sacs',lane:'ranged',unlock:'acid',cost:{chitin:14},step:.12,desc:'+ranged lane'},
+  tarsi:{name:'Spiked Tarsi',lane:'swarm',unlock:'start',cost:{chitin:10},step:.10,desc:'+swarm lane'},
+  carapace:{name:'Hardened Carapace',lane:'casualty',unlock:'forge',cost:{chitin:18},step:.08,desc:'-casualties'}
+};
+const EVOLUTIONS = {
+  trail_memory:{name:'Trail Memory',cost:6,desc:'+25% pheromone income',effect:{pherMult:.25}},
+  royal_molt:{name:'Royal Molt',cost:8,desc:'Champion promotions unlock sooner',effect:{championWins:-1},prereq:'trail_memory'},
+  caustic_recipe:{name:'Caustic Recipe',cost:7,desc:'Unlock Caustic Sacs recipe',effect:{recipe:'caustic'}},
+  carapace_recipe:{name:'Carapace Recipe',cost:10,desc:'Unlock Hardened Carapace recipe',effect:{recipe:'carapace'},prereq:'caustic_recipe'},
+  unified_instinct:{name:'Unified Instinct',cost:14,desc:'Region unification grants a stronger flight',effect:{unification:true},prereq:'trail_memory'}
+};
+const RAID_CONFIG = {interval:95,grace:75};
 const UNITS = {
   majors:{name:'Major',unlock:'barracks',cost:{food:8,chitin:4,adults:1},time:18,role:'Front breaker'},
   swarmers:{name:'Swarmer',unlock:'start',cost:{food:6,adults:1},time:10,role:'Fast melee'},
@@ -3745,12 +3788,12 @@ const FORMATIONS = {
   acid:{name:'Acid Line',frontMult:1,swarmMult:1,rangedMult:1.45,casualtyMult:1,tip:'Strong against flying or clustered enemies.'}
 };
 const TERRITORIES = {
-  sunny_rock:{name:'Sunny Rock',enemy:'Beetle Guard',enemyPower:{front:10,swarm:2,ranged:0,support:0},traits:['armored'],reward:{foodMult:.10},unlocks:['mossy_log','compost_edge'],chambers:[],desc:'Warm stone with soft trails and beetle sentries.'},
-  mossy_log:{name:'Mossy Log',enemy:'Spider Scouts',enemyPower:{front:5,swarm:10,ranged:0,support:3},traits:['fast'],reward:{growthMult:.15},unlocks:['cracked_paver'],chambers:['scout'],desc:'Damp wood full of fungus and hidden predators.'},
-  compost_edge:{name:'Compost Edge',enemy:'Earwig Swarm',enemyPower:{front:3,swarm:14,ranged:0,support:2},traits:['soft','numerous'],reward:{foodCapBonus:25},unlocks:['fallen_plum'],chambers:['acid'],desc:'Fertile rot rich with food and danger.'},
-  cracked_paver:{name:'Cracked Paver',enemy:'Ironclad Beetles',enemyPower:{front:18,swarm:4,ranged:0,support:0},traits:['armored','heavy'],reward:{matsMult:.20},unlocks:['sunken_patio'],chambers:['forge'],desc:'Broken stone sheltering armored rivals.'},
-  fallen_plum:{name:'Fallen Plum',enemy:'Hornet Nest',enemyPower:{front:4,swarm:6,ranged:14,support:2},traits:['flying','fast'],reward:{foodMult:.10,growthMult:.10},unlocks:['sunken_patio'],chambers:[],desc:'Sweet fruit guarded from above.'},
-  sunken_patio:{name:'Sunken Patio',enemy:'Rival Colony Army',enemyPower:{front:16,swarm:14,ranged:10,support:6},traits:['organized','mixed'],reward:{chitin:20,pheromones:6},unlocks:[],chambers:['command'],desc:'A distant crack held by a rival colony.'}
+  sunny_rock:{name:'Sunny Rock',enemy:'Beetle Guard',enemyPower:{front:10,swarm:2,ranged:0,support:0},traits:['armored'],reward:{foodMult:.10},yield:{tributePerSec:{food:.05}},unlocks:['mossy_log','compost_edge'],chambers:[],desc:'Warm stone with soft trails and beetle sentries.'},
+  mossy_log:{name:'Mossy Log',enemy:'Spider Scouts',enemyPower:{front:5,swarm:10,ranged:0,support:3},traits:['fast'],reward:{growthMult:.15},yield:{tributePerSec:{chitin:.03},recruit:{type:'brood',target:'larvae',everySec:90,amount:1}},unlocks:['cracked_paver'],chambers:['scout'],desc:'Damp wood full of fungus and hidden predators.'},
+  compost_edge:{name:'Compost Edge',enemy:'Earwig Swarm',enemyPower:{front:3,swarm:14,ranged:0,support:2},traits:['soft','numerous'],reward:{foodCapBonus:25},yield:{tributePerSec:{food:.08},recruit:{type:'aphid',everySec:60,amount:1}},unlocks:['fallen_plum'],chambers:['acid'],desc:'Fertile rot rich with food and danger.'},
+  cracked_paver:{name:'Cracked Paver',enemy:'Ironclad Beetles',enemyPower:{front:18,swarm:4,ranged:0,support:0},traits:['armored','heavy'],reward:{matsMult:.20},yield:{tributePerSec:{materials:.05}},unlocks:['sunken_patio'],chambers:['forge'],desc:'Broken stone sheltering armored rivals.'},
+  fallen_plum:{name:'Fallen Plum',enemy:'Hornet Nest',enemyPower:{front:4,swarm:6,ranged:14,support:2},traits:['flying','fast'],reward:{foodMult:.10,growthMult:.10},yield:{tributePerSec:{food:.06},recruit:{type:'brood',target:'larvae',everySec:75,amount:1}},unlocks:['sunken_patio'],chambers:[],desc:'Sweet fruit guarded from above.'},
+  sunken_patio:{name:'Sunken Patio',enemy:'Rival Colony Army',enemyPower:{front:16,swarm:14,ranged:10,support:6},traits:['organized','mixed'],reward:{chitin:20,pheromones:6},yield:{tributePerSec:{chitin:.04},recruit:{type:'brood',target:'adults',everySec:120,amount:1}},unlocks:[],chambers:['command'],desc:'A distant crack held by a rival colony.'}
 };
 const ENEMY_HINTS = {armored:'Armor ahead — bring acid or Majors.',heavy:'Armor ahead — bring acid or Majors.',fast:'Fast swarm — hold with Shield Wall.',numerous:'Fast swarm — hold with Shield Wall.',soft:'Fast swarm — hold with Shield Wall.',flying:'They strike from above — answer with acid.',organized:'A real army. Command them as one.',mixed:'A real army. Command them as one.'};
 const LOG_POOLS = {
@@ -3774,7 +3817,7 @@ function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
 function fmtInt(n){return String(Math.floor(Number.isFinite(n)?n:0));}
 function fmt1(n){return (Number.isFinite(n)?n:0).toFixed(1).replace(/\.0$/,'');}
 function makeState(){
-  const s={saveVersion:SAVE_VERSION,resources:{food:60,materials:35,chitin:8,pheromones:5},caps:{food:120,materials:80,chitin:40,pheromones:25},security:0,population:{adults:18,larvae:6},assigned:{foragers:8,excavators:6,soldiers:2,nurses:2},upgrades:{},session:{lastTickTs:Date.now(),offlineApplied:false},status:'stable',map:{nodes:{},selectedNode:null},combat:null,battle:null,prestige:{generation:0,mutations:[],unlockedBiomes:['garden'],currentBiome:'garden'},buildings:{slots:[],activeBuildSlotId:null,unlockedBuildingIds:['granary','store','nursery','barracks']},army:{units:{majors:0,swarmers:4,spitters:0,scouts:0},wounded:{majors:0,swarmers:0,spitters:0,scouts:0},trainingQueue:[],formation:'balanced',recoveryTimer:0},campaign:{selectedTerritoryId:'sunny_rock',territories:{}}};
+  const s={saveVersion:SAVE_VERSION,resources:{food:60,materials:35,chitin:8,pheromones:5},caps:{food:120,materials:80,chitin:40,pheromones:25},security:0,population:{adults:18,larvae:6},assigned:{foragers:8,excavators:6,soldiers:2,nurses:2},upgrades:{},session:{lastTickTs:Date.now(),offlineApplied:false},status:'stable',map:{nodes:{},selectedNode:null},combat:null,battle:null,prestige:{generation:0,mutations:[],unlockedBiomes:['garden'],currentBiome:'garden',unificationBonus:0},evolution:{unlocked:[]},buildings:{slots:[],activeBuildSlotId:null,unlockedBuildingIds:['granary','store','nursery','barracks']},army:{units:{majors:0,swarmers:4,spitters:0,scouts:0},wounded:{majors:0,swarmers:0,spitters:0,scouts:0},trainingQueue:[],formation:'balanced',recoveryTimer:0,champions:[],survivorWins:{majors:0,swarmers:0,spitters:0,scouts:0},adaptations:{},garrisons:{}},campaign:{selectedTerritoryId:'sunny_rock',territories:{},recruitTimers:{},aphids:0,raid:{timer:0,threat:null},unified:false}};
   for(let i=0;i<6;i++)s.buildings.slots.push({id:'slot_'+(i+1),buildingId:null,level:0,status:i<4?'empty':'locked',buildTimer:0,buildDuration:0});
   Object.assign(s.buildings.slots[0],{buildingId:'nursery',level:1,status:'complete'});
   Object.keys(TERRITORIES).forEach(id=>s.campaign.territories[id]={state:id==='sunny_rock'?'available':'locked',unlocked:id==='sunny_rock',claimed:false,battleCleared:false});
@@ -3784,6 +3827,17 @@ function migrate(raw){
   const s=makeState(); if(!raw||typeof raw!=='object')return s;
   s.resources=Object.assign(s.resources,raw.resources||{}); if(typeof s.resources.chitin!=='number')s.resources.chitin=Math.floor((raw.security||0)/3); if(typeof s.resources.pheromones!=='number')s.resources.pheromones=4;
   s.population=Object.assign(s.population,raw.population||{}); s.assigned=Object.assign(s.assigned,raw.assigned||{}); if(typeof s.assigned.nurses!=='number')s.assigned.nurses=0; s.session=Object.assign(s.session,raw.session||{}); s.prestige=Object.assign(s.prestige,raw.prestige||{}); if(raw.buildings&&Array.isArray(raw.buildings.slots))s.buildings=raw.buildings; if(raw.army&&raw.army.units)s.army=Object.assign(s.army,raw.army); if(raw.campaign&&raw.campaign.territories)s.campaign=raw.campaign;
+  s.campaign.recruitTimers=Object.assign({},raw.campaign?.recruitTimers||s.campaign.recruitTimers||{});
+  if(typeof s.campaign.aphids!=='number')s.campaign.aphids=0;
+  s.campaign.raid=Object.assign({timer:0,threat:null},s.campaign.raid||{});
+  if(typeof s.campaign.unified!=='boolean')s.campaign.unified=false;
+  s.evolution=Object.assign({unlocked:[]},raw.evolution||s.evolution||{});
+  if(!Array.isArray(s.evolution.unlocked))s.evolution.unlocked=[];
+  s.prestige.unificationBonus=s.prestige.unificationBonus||0;
+  s.army.champions=Array.isArray(s.army.champions)?s.army.champions:[];
+  s.army.survivorWins=Object.assign({majors:0,swarmers:0,spitters:0,scouts:0},s.army.survivorWins||{});
+  s.army.adaptations=Object.assign({},s.army.adaptations||{});
+  s.army.garrisons=Object.assign({},s.army.garrisons||{});
   const up={foodStorage:'granary',materialStorage:'store',nursery:'nursery',guardChamber:'barracks'}; Object.keys(up).forEach(k=>{if(raw.upgrades&&raw.upgrades[k]>0&&!hasChamberState(s,up[k])){const sl=s.buildings.slots.find(x=>x.status==='empty'); if(sl)Object.assign(sl,{buildingId:up[k],level:raw.upgrades[k],status:'complete'});}});
   if(raw.map&&raw.map.nodes){const nm={n1:'sunny_rock',n2:'mossy_log',n3:'compost_edge',n4:'cracked_paver',n5:'fallen_plum',n6:'sunken_patio'}; Object.keys(raw.map.nodes).forEach(k=>{if(raw.map.nodes[k].state==='claimed')claimState(s,nm[k]||k);});}
   s.saveVersion=SAVE_VERSION; s.combat=null; s.battle=null; refreshUnlocks(s); return s;
@@ -3792,19 +3846,205 @@ function hasChamber(id){return hasChamberState(G,id);}
 function hasChamberState(s,id){return s.buildings.slots.some(x=>x.buildingId===id&&x.status==='complete');}
 function chLevel(id,s=G){const sl=s.buildings.slots.find(x=>x.buildingId===id&&x.status==='complete'); return sl?Math.max(1,sl.level||1):0;}
 function popCap(s=G){return 24+8*chLevel('nursery',s)+6*Object.values(s.campaign.territories).filter(x=>x.claimed).length;}
-function armorReduction(s=G){const r=1-0.20*chLevel('forge',s)-0.10*chLevel('barracks',s); return Math.max(0.4,r);}
+function armorReduction(s=G){const b=bonuses(s), r=(1-0.20*chLevel('forge',s)-0.10*chLevel('barracks',s)-b.armorBonus)*casualtyAdaptationMult(s); return Math.max(0.32,r);}
 let _toastTimer=null;
 function showToast(msg){let t=document.getElementById('conquest-toast'); if(!t){t=document.createElement('div'); t.id='conquest-toast'; t.style.cssText='position:fixed;left:50%;bottom:74px;transform:translateX(-50%);max-width:88%;background:rgba(45,34,23,.95);color:#fff7e6;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;text-align:center;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,.35);transition:opacity .3s;pointer-events:none;'; document.body.appendChild(t);} t.textContent=msg; t.style.opacity='1'; clearTimeout(_toastTimer); _toastTimer=setTimeout(()=>{t.style.opacity='0';},2600);}
 function unlockedChambers(){const ids=new Set(['granary','store','nursery','barracks']); Object.entries(TERRITORIES).forEach(([id,t])=>{if(G.campaign.territories[id]?.claimed)(t.chambers||[]).forEach(c=>ids.add(c));}); return Array.from(ids);}
 function refreshUnlocks(s){const ids=new Set(['granary','store','nursery','barracks']); Object.entries(TERRITORIES).forEach(([id,t])=>{if(s.campaign.territories[id]?.claimed)(t.chambers||[]).forEach(c=>ids.add(c));}); s.buildings.unlockedBuildingIds=Array.from(ids);}
+function completeChambers(s=G){return (s.buildings.slots||[]).filter(sl=>sl.status==='complete'&&CHAMBERS[sl.buildingId]);}
+function chamberTag(sl){return CHAMBERS[sl.buildingId]?.comboTag||sl.buildingId;}
+function activeCombos(s=G){
+  const byId={};
+  completeChambers(s).forEach(sl=>byId[sl.id]=sl);
+  const used=new Set(), active=[];
+  Object.entries(SLOT_ADJACENCY).forEach(([slotId,neighbors])=>{
+    const a=byId[slotId]; if(!a)return;
+    neighbors.forEach(nid=>{
+      if(slotId>nid)return;
+      const b=byId[nid]; if(!b)return;
+      const tags=[chamberTag(a),chamberTag(b)].sort().join('|');
+      Object.entries(COMBOS).forEach(([id,c])=>{
+        if(used.has(id))return;
+        if(c.tags.slice().sort().join('|')===tags){used.add(id); active.push({id,...c,slots:[slotId,nid]});}
+      });
+    });
+  });
+  return active;
+}
+function potentialCombosForSlot(slot,buildId=null,s=G){
+  if(!slot)return[];
+  const chosen=buildId?CHAMBERS[buildId]:CHAMBERS[slot.buildingId];
+  if(!chosen)return[];
+  const tag=chosen.comboTag||buildId||slot.buildingId, out=[];
+  (SLOT_ADJACENCY[slot.id]||[]).forEach(nid=>{
+    const n=s.buildings.slots.find(x=>x.id===nid&&x.status==='complete');
+    if(!n)return;
+    const nTag=chamberTag(n);
+    Object.entries(COMBOS).forEach(([id,c])=>{
+      if(c.tags.includes(tag)&&c.tags.includes(nTag))out.push({id,...c,neighbor:n});
+    });
+  });
+  const seen=new Set();
+  return out.filter(c=>seen.has(c.id)?false:(seen.add(c.id),true));
+}
+function comboSummaryHTML(s=G){
+  const active=activeCombos(s);
+  const body=active.length?active.map(c=>`<div class="line-sub">Combo: ${c.name} ✓ ${c.hint}</div>`).join(''):'<div class="line-sub">No chamber combos active.</div>';
+  return `<div class="panel-card"><div class="line-main">Pheromone Trails</div>${body}</div>`;
+}
+function territoryTribute(s=G){
+  const out={food:0,materials:0,chitin:0};
+  Object.entries(TERRITORIES).forEach(([id,t])=>{
+    if(!s.campaign.territories[id]?.claimed)return;
+    const tr=t.yield?.tributePerSec||{};
+    out.food+=(tr.food||0);
+    out.materials+=(tr.materials||0);
+    out.chitin+=(tr.chitin||0);
+  });
+  out.food+=(s.campaign.aphids||0)*0.015;
+  return out;
+}
+function yieldText(t){
+  const parts=[], tr=t.yield?.tributePerSec||{}, rec=t.yield?.recruit;
+  if(tr.food)parts.push(`+${fmt1(tr.food)}/s food`);
+  if(tr.materials)parts.push(`+${fmt1(tr.materials)}/s mats`);
+  if(tr.chitin)parts.push(`+${fmt1(tr.chitin)}/s chitin`);
+  if(rec)parts.push(rec.type==='aphid'?`aphid herd every ${rec.everySec}s`:`+${rec.amount} ${rec.target==='adults'?'adult':'larva'} / ${rec.everySec}s`);
+  return parts.join(', ');
+}
+function tickTerritoryRecruits(s,dt){
+  if(!s.campaign.recruitTimers)s.campaign.recruitTimers={};
+  if(typeof s.campaign.aphids!=='number')s.campaign.aphids=0;
+  Object.entries(TERRITORIES).forEach(([id,t])=>{
+    const rec=t.yield?.recruit;
+    if(!rec)return;
+    if(!s.campaign.territories[id]?.claimed){s.campaign.recruitTimers[id]=0; return;}
+    s.campaign.recruitTimers[id]=(s.campaign.recruitTimers[id]||0)+dt;
+    while(s.campaign.recruitTimers[id]>=rec.everySec){
+      s.campaign.recruitTimers[id]-=rec.everySec;
+      if(rec.type==='aphid'){s.campaign.aphids+=rec.amount; continue;}
+      const cap=popCap(s), room=Math.max(0,cap-totalPop(s));
+      const add=Math.min(rec.amount,room);
+      if(add<=0)continue;
+      if(rec.target==='adults')s.population.adults+=add;
+      else s.population.larvae+=add;
+    }
+  });
+}
 function unitUnlocked(id){return UNITS[id].unlock==='start'||hasChamber(UNITS[id].unlock);}
 function costText(c){return Object.keys(c).map(k=>`${c[k]} ${k==='adults'?'adult':k}`).join(', ');}
 function hasCost(c){return Object.keys(c).every(k=>k==='adults'?G.population.adults>=c[k]:(G.resources[k]||0)>=c[k]);}
 function payCost(c){if(!hasCost(c))return false; Object.keys(c).forEach(k=>{if(k==='adults')G.population.adults-=c[k]; else G.resources[k]-=c[k];}); return true;}
-function bonuses(){const b={foodMult:1,matsMult:1,growthMult:1,foodCapBonus:0}; Object.entries(TERRITORIES).forEach(([id,t])=>{if(!G.campaign.territories[id]?.claimed)return; const r=t.reward; if(r.foodMult)b.foodMult+=r.foodMult; if(r.matsMult)b.matsMult+=r.matsMult; if(r.growthMult)b.growthMult+=r.growthMult; if(r.foodCapBonus)b.foodCapBonus+=r.foodCapBonus;}); return b;}
-function updateCaps(){const b=bonuses(); G.caps.food=120+b.foodCapBonus+80*chLevel('granary'); G.caps.materials=80+60*chLevel('store'); G.caps.chitin=40; G.caps.pheromones=25;}
-function getNetRates(s=G){const b=bonuses(), adults=s.population.adults, nursery=1+0.25*chLevel('nursery',s); const army=Object.values(s.army.units).reduce((a,c)=>a+c,0); const woundedRecovering=Object.values(s.army.wounded).reduce((a,c)=>a+c,0); const foodUpkeep=adults*0.035+army*0.012+woundedRecovering*0.01; return {netFood:(s.assigned.foragers||0)*.35*b.foodMult-foodUpkeep,matsRate:(s.assigned.excavators||0)*.22*b.matsMult,chitinRate:(s.assigned.soldiers||0)*.02+0.025*chLevel('forge',s),pherRate:0.015*chLevel('scout',s),larvaeRate:(s.assigned.nurses||0)*.035*nursery*b.growthMult,matureRate:s.population.larvae*.0025*nursery*b.growthMult,foodRatio:s.resources.food/Math.max(1,s.caps.food)};}
-function tick(s,dt){G=s; updateCaps(); const r=getNetRates(s); s.resources.food=Math.max(0,Math.min(s.caps.food,s.resources.food+r.netFood*dt)); s.resources.materials=Math.max(0,Math.min(s.caps.materials,s.resources.materials+r.matsRate*dt)); s.resources.chitin=Math.max(0,Math.min(s.caps.chitin,s.resources.chitin+r.chitinRate*dt)); s.resources.pheromones=Math.max(0,Math.min(s.caps.pheromones,s.resources.pheromones+r.pherRate*dt)); const _cap=popCap(s); if(s.resources.food>0&&totalPop(s)<_cap)s.population.larvae+=r.larvaeRate*dt; const _room=Math.max(0,_cap-s.population.adults),m=Math.min(s.population.larvae,r.matureRate*dt,_room); s.population.larvae-=m; s.population.adults+=m; tickBuild(s,dt); tickTrain(s,dt); enforceAssignmentLimits(s); const fr=s.resources.food/Math.max(1,s.caps.food); s.status=fr<.1?'starving':fr<.2?'hungry':(s.resources.food>=s.caps.food-1||s.resources.materials>=s.caps.materials-1?'capped':'stable'); refreshUnlocks(s);}
+function hasEvolution(id,s=G){return !!s.evolution?.unlocked?.includes(id);}
+function evolutionEffect(key,s=G){return (s.evolution?.unlocked||[]).reduce((sum,id)=>sum+(EVOLUTIONS[id]?.effect?.[key]||0),0);}
+function recipeUnlocked(id,s=G){const d=ADAPTATIONS[id]; if(!d)return false; if(id==='mandible'||id==='tarsi')return true; return Object.entries(EVOLUTIONS).some(([eid,e])=>e.effect?.recipe===id&&hasEvolution(eid,s));}
+function adaptationUnlocked(id,s=G){const d=ADAPTATIONS[id]; return !!d&&(d.unlock==='start'||hasChamberState(s,d.unlock))&&recipeUnlocked(id,s);}
+function adaptationTier(id,s=G){return Math.max(0,Math.min(3,s.army?.adaptations?.[id]||0));}
+function adaptationMult(lane,s=G){let m=1; Object.entries(ADAPTATIONS).forEach(([id,d])=>{if(d.lane===lane)m+=adaptationTier(id,s)*d.step;}); return m;}
+function casualtyAdaptationMult(s=G){return Math.max(.55,1-adaptationTier('carapace',s)*ADAPTATIONS.carapace.step);}
+function championLane(caste){return caste==='majors'?'front':caste==='swarmers'?'swarm':caste==='spitters'?'ranged':'support';}
+function aliveChampions(s=G){return (s.army.champions||[]).filter(c=>c.alive!==false);}
+function championPowerByLane(s=G,selectedIds=null){
+  const ids=selectedIds?new Set(selectedIds):null, out={front:0,swarm:0,ranged:0,support:0};
+  aliveChampions(s).forEach(c=>{if(ids&&!ids.has(c.id))return; out[championLane(c.caste)]+=.9+(c.level||1)*.35;});
+  return out;
+}
+function promotionThreshold(s=G){return Math.max(1,3+evolutionEffect('championWins',s));}
+function promoteChampion(caste){
+  if((G.army.units[caste]||0)<=0||aliveChampions(G).length>=6)return;
+  if((G.army.survivorWins[caste]||0)<promotionThreshold(G))return;
+  G.army.units[caste]--;
+  G.army.survivorWins[caste]=0;
+  const name=CHAMPION_NAMES[(G.army.champions.length+Math.floor(Math.random()*CHAMPION_NAMES.length))%CHAMPION_NAMES.length];
+  const trait=CHAMPION_TRAITS[Math.floor(Math.random()*CHAMPION_TRAITS.length)];
+  G.army.champions.push({id:'champ_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*999),name,caste,level:1,xp:0,traits:[trait],gearId:null,alive:true});
+  saveGame(); updateUI(); showToast(`${name} molted into the Royal Guard.`);
+}
+function awardChampionXP(result,selectedIds=null){
+  const ids=selectedIds?new Set(selectedIds):null;
+  aliveChampions(G).forEach(c=>{
+    if(ids&&!ids.has(c.id))return;
+    c.xp=(c.xp||0)+(result.includes('victory')?3:1);
+    while(c.xp>=c.level*5&&c.level<10){c.xp-=c.level*5; c.level++;}
+  });
+}
+function rollChampionDeaths(result,selectedIds=null){
+  if(result!=='defeat')return[];
+  const ids=selectedIds?new Set(selectedIds):null, dead=[];
+  aliveChampions(G).forEach(c=>{
+    if(ids&&!ids.has(c.id))return;
+    if(Math.random()<.25){c.alive=false; dead.push(c.name);}
+  });
+  return dead;
+}
+function craftAdaptation(id){
+  const d=ADAPTATIONS[id], tier=adaptationTier(id);
+  if(!d||tier>=3||!adaptationUnlocked(id))return;
+  const cost={}; Object.entries(d.cost).forEach(([k,v])=>cost[k]=Math.round(v*Math.pow(1.8,tier)));
+  if(!payCost(cost)){showToast('Not enough chitin.');return;}
+  G.army.adaptations[id]=tier+1; saveGame(); updateUI();
+}
+function defaultMuster(){return {units:Object.assign({},G.army.units),championIds:aliveChampions(G).map(c=>c.id)};}
+function currentMuster(){if(!window._muster)window._muster=defaultMuster(); return window._muster;}
+function musterPower(enemyTraits){
+  const m=currentMuster(), proxy=JSON.parse(JSON.stringify(G));
+  proxy.army.units=Object.assign({majors:0,swarmers:0,spitters:0,scouts:0},m.units||{});
+  return armyPower(proxy,enemyTraits,m.championIds);
+}
+function garrisonUnits(s=G){
+  const base={majors:0,swarmers:0,spitters:0,scouts:0};
+  Object.values(s.army.garrisons||{}).forEach(g=>Object.keys(base).forEach(k=>base[k]+=g.units?.[k]||0));
+  return base;
+}
+function freeUnits(s=G){
+  const g=garrisonUnits(s), out={};
+  Object.keys(UNITS).forEach(k=>out[k]=Math.max(0,(s.army.units[k]||0)-(g[k]||0)));
+  return out;
+}
+function garrisonPower(nodeId,s=G){
+  const g=s.army.garrisons?.[nodeId]||{units:{},championIds:[]}, proxy=JSON.parse(JSON.stringify(s));
+  proxy.army.units=Object.assign({majors:0,swarmers:0,spitters:0,scouts:0},g.units||{});
+  const p=armyPower(proxy,TERRITORIES[nodeId]?.traits||[],g.championIds||[]);
+  return p.total;
+}
+function assignGarrison(nodeId){
+  if(!G.campaign.territories[nodeId]?.claimed)return;
+  const free=freeUnits(G), units={};
+  Object.keys(UNITS).forEach(k=>units[k]=Math.min(free[k],Math.max(0,Math.ceil((G.army.units[k]||0)*.25))));
+  G.army.garrisons[nodeId]={units,championIds:[]};
+  saveGame(); updateUI(); showToast(`Garrison posted at ${TERRITORIES[nodeId].name}.`);
+}
+function releaseGarrison(nodeId){delete G.army.garrisons[nodeId]; saveGame(); updateUI();}
+function borderClaimedNodes(s=G){return Object.keys(TERRITORIES).filter(id=>s.campaign.territories[id]?.claimed&&(TERRITORIES[id].unlocks||[]).some(n=>!s.campaign.territories[n]?.claimed));}
+function tickRaids(s,dt){
+  if(!s.campaign.raid)s.campaign.raid={timer:0,threat:null};
+  const r=s.campaign.raid;
+  if(r.threat){r.threat.remaining-=dt; if(r.threat.remaining<=0)resolveRaid(r.threat.nodeId); return;}
+  const borders=borderClaimedNodes(s); if(!borders.length)return;
+  r.timer+=dt;
+  if(r.timer>=RAID_CONFIG.interval){r.timer=0; const nodeId=borders[Math.floor(Math.random()*borders.length)]; r.threat={nodeId,remaining:RAID_CONFIG.grace,strength:Math.max(6,enemyTotal(TERRITORIES[nodeId].enemyPower)*.7)}; s.campaign.territories[nodeId].state='threatened';}
+}
+function resolveRaid(nodeId){
+  const r=G.campaign.raid?.threat; if(!r||r.nodeId!==nodeId)return;
+  const won=garrisonPower(nodeId,G)>=r.strength;
+  if(won){G.campaign.territories[nodeId].state='claimed'; showToast(`${TERRITORIES[nodeId].name} held.`);}
+  else{Object.assign(G.campaign.territories[nodeId],{state:'available',claimed:false,battleCleared:false,unlocked:true}); G.campaign.unified=false; delete G.army.garrisons[nodeId]; showToast(`${TERRITORIES[nodeId].name} was lost.`);}
+  G.campaign.raid={timer:0,threat:null}; refreshUnlocks(G); saveGame(); updateUI();
+}
+function spendEvolution(id){
+  const e=EVOLUTIONS[id]; if(!e||hasEvolution(id))return;
+  if(e.prereq&&!hasEvolution(e.prereq)){showToast('Prerequisite instinct missing.');return;}
+  if(G.resources.pheromones<e.cost){showToast('Not enough pheromones.');return;}
+  G.resources.pheromones-=e.cost; G.evolution.unlocked.push(id); saveGame(); updateUI();
+}
+function checkRegionUnified(s=G){
+  const all=Object.keys(TERRITORIES).every(id=>s.campaign.territories[id]?.claimed);
+  if(all&&!s.campaign.unified){s.campaign.unified=true; s.prestige.unificationBonus=(s.prestige.unificationBonus||0)+1; showToast('Region unified. Nuptial Flight strengthened.');}
+}
+function bonuses(s=G){const b={foodMult:1,matsMult:1,growthMult:1,foodCapBonus:0,matsCapBonus:0,foodCapMult:1,matsCapMult:1,rangedMult:1,supportMult:1,armorBonus:0}; Object.entries(TERRITORIES).forEach(([id,t])=>{if(!s.campaign.territories[id]?.claimed)return; const r=t.reward; if(r.foodMult)b.foodMult+=r.foodMult; if(r.matsMult)b.matsMult+=r.matsMult; if(r.growthMult)b.growthMult+=r.growthMult; if(r.foodCapBonus)b.foodCapBonus+=r.foodCapBonus;}); activeCombos(s).forEach(c=>{const e=c.effect||{}; if(e.growthMult)b.growthMult+=e.growthMult; if(e.foodCapMult)b.foodCapMult+=e.foodCapMult; if(e.matsCapMult)b.matsCapMult+=e.matsCapMult; if(e.rangedMult)b.rangedMult+=e.rangedMult; if(e.supportMult)b.supportMult+=e.supportMult; if(e.armorBonus)b.armorBonus+=e.armorBonus;}); return b;}
+function updateCaps(){const b=bonuses(G); G.caps.food=Math.round((120+b.foodCapBonus+80*chLevel('granary'))*b.foodCapMult); G.caps.materials=Math.round((80+b.matsCapBonus+60*chLevel('store'))*b.matsCapMult); G.caps.chitin=40; G.caps.pheromones=25;}
+function getNetRates(s=G){const b=bonuses(s), tr=territoryTribute(s), adults=s.population.adults, nursery=1+0.25*chLevel('nursery',s); const army=Object.values(s.army.units).reduce((a,c)=>a+c,0)+aliveChampions(s).length; const woundedRecovering=Object.values(s.army.wounded).reduce((a,c)=>a+c,0); const foodUpkeep=adults*0.035+army*0.012+woundedRecovering*0.01; return {netFood:(s.assigned.foragers||0)*.35*b.foodMult+tr.food-foodUpkeep,matsRate:(s.assigned.excavators||0)*.22*b.matsMult+tr.materials,chitinRate:(s.assigned.soldiers||0)*.02+0.025*chLevel('forge',s)+tr.chitin,pherRate:0.015*chLevel('scout',s)*(1+evolutionEffect('pherMult',s)),larvaeRate:(s.assigned.nurses||0)*.035*nursery*b.growthMult,matureRate:s.population.larvae*.0025*nursery*b.growthMult,foodRatio:s.resources.food/Math.max(1,s.caps.food),tribute:tr};}
+function tick(s,dt){G=s; updateCaps(); const r=getNetRates(s); s.resources.food=Math.max(0,Math.min(s.caps.food,s.resources.food+r.netFood*dt)); s.resources.materials=Math.max(0,Math.min(s.caps.materials,s.resources.materials+r.matsRate*dt)); s.resources.chitin=Math.max(0,Math.min(s.caps.chitin,s.resources.chitin+r.chitinRate*dt)); s.resources.pheromones=Math.max(0,Math.min(s.caps.pheromones,s.resources.pheromones+r.pherRate*dt)); const _cap=popCap(s); if(s.resources.food>0&&totalPop(s)<_cap)s.population.larvae+=r.larvaeRate*dt; const _room=Math.max(0,_cap-s.population.adults),m=Math.min(s.population.larvae,r.matureRate*dt,_room); s.population.larvae-=m; s.population.adults+=m; tickTerritoryRecruits(s,dt); tickBuild(s,dt); tickTrain(s,dt); enforceAssignmentLimits(s); const fr=s.resources.food/Math.max(1,s.caps.food); s.status=fr<.1?'starving':fr<.2?'hungry':(s.resources.food>=s.caps.food-1||s.resources.materials>=s.caps.materials-1?'capped':'stable'); refreshUnlocks(s);}
 function tickBuild(s,dt){const a=s.buildings.slots.find(x=>x.status==='building'); if(a){s.buildings.activeBuildSlotId=a.id; a.buildTimer=Math.max(0,a.buildTimer-dt); if(a.buildTimer<=0){a.status='complete'; if(a._upgrading){a.level=(a.level||1)+1; delete a._upgrading;} else {a.level=Math.max(1,a.level||1);} saveGame();}}}
 function startUpgrade(slotId){const sl=G.buildings.slots.find(x=>x.id===slotId); if(!sl||sl.status!=='complete')return; const lvl=sl.level||1; if(lvl>=3){showToast('Chamber already at max level.');return;} if(G.buildings.slots.some(x=>x.status==='building')){showToast('One construction runs at a time.');return;} const d=CHAMBERS[sl.buildingId],cost={}; Object.keys(d.cost).forEach(k=>cost[k]=Math.round(d.cost[k]*Math.pow(1.8,lvl))); if(!payCost(cost)){showToast('Not enough resources to upgrade.');return;} sl.status='building'; sl._upgrading=true; sl.buildDuration=Math.round(d.time*Math.pow(1.5,lvl)); sl.buildTimer=sl.buildDuration; saveGame(); updateUI();}
 function tickTrain(s,dt){const q=s.army.trainingQueue[0]; if(!q)return; q.timer=Math.max(0,q.timer-dt); if(q.timer<=0){s.army.units[q.unitId]++; s.army.trainingQueue.shift(); saveGame();}}
@@ -3952,11 +4192,12 @@ function renderVisual() {
     </div>
   `;
 }
-function updateUI(){updateCaps(); const r=getNetRates(G), set=(id,v)=>{const e=document.getElementById(id); if(e)e.textContent=v;}; set('rh-food',fmtInt(G.resources.food)); set('rh-mats',fmtInt(G.resources.materials)); set('rh-chitin',fmtInt(G.resources.chitin)); set('rh-pheromones',fmtInt(G.resources.pheromones)); set('rh-pop',fmtInt(totalPop(G))); set('rh-food-rate',`${r.netFood>=0?'+':''}${fmt1(r.netFood)}/s`); set('rh-mats-rate',`+${fmt1(r.matsRate)}/s`); set('rh-chitin-rate',`+${fmt1(r.chitinRate)}/s`); set('rh-pher-rate',`+${fmt1(r.pherRate)}/s`); set('rh-pop-detail',`${fmtInt(unassigned(G))} idle / cap ${popCap(G)}`); const foodPill=document.getElementById('rh-food')?.closest('.res-pill'); if(foodPill)foodPill.classList.toggle('critical',G.resources.food<12||r.netFood<0); document.querySelectorAll('.tb-btn[data-speed]').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.speed)===speed)); renderStatus(); renderNest(); bindNestAssignments(); renderBuild(); renderArmy(); renderCampaign(); renderVisual();}
+function updateUI(){updateCaps(); const r=getNetRates(G), set=(id,v)=>{const e=document.getElementById(id); if(e)e.textContent=v;}; set('rh-food',fmtInt(G.resources.food)); set('rh-mats',fmtInt(G.resources.materials)); set('rh-chitin',fmtInt(G.resources.chitin)); set('rh-pheromones',fmtInt(G.resources.pheromones)); set('rh-pop',fmtInt(totalPop(G))); set('rh-food-rate',`${r.netFood>=0?'+':''}${fmt1(r.netFood)}/s`); set('rh-mats-rate',`+${fmt1(r.matsRate)}/s`); set('rh-chitin-rate',`+${fmt1(r.chitinRate)}/s`); set('rh-pher-rate',`+${fmt1(r.pherRate)}/s`); set('rh-pop-detail',`${fmtInt(unassigned(G))} idle / cap ${popCap(G)}`); const foodPill=document.getElementById('rh-food')?.closest('.res-pill'); if(foodPill)foodPill.classList.toggle('critical',G.resources.food<12||r.netFood<0); document.querySelectorAll('.tb-btn[data-speed]').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.speed)===speed)); renderStatus(); renderNest(); bindNestAssignments(); renderBuild(); renderArmy(); renderCampaign(); renderEvolution(); renderVisual();}
 function renderStatus(){const strip=document.getElementById('status-strip'); if(!strip)return; const action=nextAction(); strip.className=action.kind==='critical'?'starving':G.status; document.getElementById('ss-icon').textContent=action.kind==='critical'?'!':G.status==='stable'?'*':'!'; document.getElementById('ss-text').textContent=action.kind==='critical'?action.label:G.status==='hungry'?'Food running low':G.status==='starving'?'Starvation risk':'Colony is stable'; document.getElementById('ss-hint').textContent=action.detail;}
 function renderNest(){
   const r=getNetRates(G), b=bonuses(), el=document.getElementById('nest-summary'), action=nextAction();
-  if(el)el.innerHTML=renderLoopTracker()+[['Food Flow',`${r.netFood>=0?'+':''}${fmt1(r.netFood)}/s net`],['Timers',activeText()],['Territory',`${claimedCount()} claimed, food x${fmt1(b.foodMult)}`],['Idle Ants',`${fmtInt(unassigned(G))} available`]].map(x=>`<div class="metric-row"><div class="grow"><div class="line-main">${x[0]}</div><div class="line-sub">${x[1]}</div></div></div>`).join('')+renderNestAssignments();
+  const tribute=`+${fmt1(r.tribute.food)}/s food, +${fmt1(r.tribute.materials)}/s mats, +${fmt1(r.tribute.chitin)}/s chitin${G.campaign.aphids?` (${fmtInt(G.campaign.aphids)} aphids)`:''}`;
+  if(el)el.innerHTML=renderLoopTracker()+[['Food Flow',`${r.netFood>=0?'+':''}${fmt1(r.netFood)}/s net`],['Timers',activeText()],['Territory',`${claimedCount()} claimed, food x${fmt1(b.foodMult)}`],['Tribute',tribute],['Idle Ants',`${fmtInt(unassigned(G))} available`]].map(x=>`<div class="metric-row"><div class="grow"><div class="line-main">${x[0]}</div><div class="line-sub">${x[1]}</div></div></div>`).join('')+renderNestAssignments();
   const card=document.getElementById('next-action')?.closest('.panel-card');
   if(card)card.className=`panel-card action-card ${action.kind==='critical'?'critical':''}`;
   const n=document.getElementById('next-action'); if(n)n.innerHTML=`<div>${action.label}</div><div class="line-sub">${action.detail}${action.tab===activeTab?'':`<button class="btn-small ready" data-next-tab="${action.tab}">Go to ${action.tab==='nest'?'Nest':action.tab[0].toUpperCase()+action.tab.slice(1)}</button>`}</div>`;
@@ -3974,48 +4215,71 @@ function renderNestAssignments(){
 function bindNestAssignments(){document.querySelectorAll('[data-nest-assign]').forEach(b=>b.addEventListener('click',()=>{changeAllocation(b.dataset.nestAssign,parseInt(b.dataset.delta,10)); saveGame();}));}
 function renderBuild(){const slots=document.getElementById('build-slots'); if(!slots)return; slots.innerHTML=G.buildings.slots.map(sl=>{const d=CHAMBERS[sl.buildingId],pct=sl.status==='building'?(1-sl.buildTimer/sl.buildDuration)*100:0; return`<button class="slot-card ${sl.status}" data-slot="${sl.id}"><div class="slot-name">${d?d.name:(sl.status==='locked'?'Locked Slot':'Empty Chamber')}</div><div class="slot-state">${sl.status==='building'?Math.ceil(sl.buildTimer)+'s left':sl.status}</div>${sl.status==='building'?`<div class="timer-mini"><div style="width:${pct}%"></div></div>`:''}</button>`;}).join(''); slots.querySelectorAll('[data-slot]').forEach(b=>b.addEventListener('click',()=>{G.buildings.activeBuildSlotId=b.dataset.slot; renderBuild();})); const selected=G.buildings.slots.find(x=>x.id===G.buildings.activeBuildSlotId)||G.buildings.slots.find(x=>x.status==='empty'), picker=document.getElementById('chamber-picker'), active=G.buildings.slots.some(x=>x.status==='building'); if(picker)picker.innerHTML=unlockedChambers().slice(0,4).map(id=>{const d=CHAMBERS[id],built=G.buildings.slots.some(x=>x.buildingId===id),disabled=!selected||selected.status!=='empty'||active||built||!hasCost(d.cost); return`<button class="picker-btn" data-build="${id}" ${disabled?'disabled':''}>${d.name}<br><span class="line-sub">${costText(d.cost)} ${d.time}s</span></button>`;}).join(''); document.querySelectorAll('[data-build]').forEach(b=>b.addEventListener('click',()=>startBuild(b.dataset.build)));}
 function startBuild(id){const d=CHAMBERS[id], sl=G.buildings.slots.find(x=>x.id===G.buildings.activeBuildSlotId&&x.status==='empty')||G.buildings.slots.find(x=>x.status==='empty'); if(!sl||G.buildings.slots.some(x=>x.status==='building')||!payCost(d.cost))return; Object.assign(sl,{buildingId:id,status:'building',buildTimer:d.time,buildDuration:d.time,level:0}); saveGame(); updateUI();}
-function armyPower(s=G,enemyTraits){const f=FORMATIONS[s.army.formation]||FORMATIONS.balanced,u=s.army.units; let front=u.majors*3.2*f.frontMult+u.swarmers*0.5; if(s.army.formation==='acid'&&u.majors===0)front*=0.75; const swarm=u.swarmers*1.7*f.swarmMult+u.scouts*0.6; let ranged=(u.spitters*2.4*f.rangedMult+u.scouts*0.4)*(1+0.10*chLevel('acid',s)); if(s.army.formation==='acid'&&enemyTraits&&enemyTraits.includes('flying'))ranged*=1.25; const support=u.scouts*1.2+2*chLevel('command',s); return{front,swarm,ranged,support,total:front+swarm+ranged+support};}
+function armyPower(s=G,enemyTraits,championIds=null){const f=FORMATIONS[s.army.formation]||FORMATIONS.balanced,u=s.army.units,b=bonuses(s),cp=championPowerByLane(s,championIds); let front=(u.majors*3.2+cp.front)*f.frontMult*adaptationMult('front',s)+u.swarmers*0.5; if(s.army.formation==='acid'&&u.majors===0)front*=0.75; const swarm=(u.swarmers*1.7+cp.swarm)*f.swarmMult*adaptationMult('swarm',s)+u.scouts*0.6; let ranged=(u.spitters*2.4*f.rangedMult+u.scouts*0.4+cp.ranged)*(1+0.10*chLevel('acid',s))*b.rangedMult*adaptationMult('ranged',s); if(s.army.formation==='acid'&&enemyTraits&&enemyTraits.includes('flying'))ranged*=1.25; const support=(u.scouts*1.2+2*chLevel('command',s)+cp.support)*b.supportMult; return{front,swarm,ranged,support,total:front+swarm+ranged+support};}
 function enemyTotal(e){return e.front+e.swarm+e.ranged+e.support;}
 function renderArmy(){document.querySelectorAll('.formation-btn').forEach(b=>b.classList.toggle('active',b.dataset.formation===G.army.formation)); const p=armyPower(),ready=p.total>=12?'Safe':p.total>=7?'Risky':'Dangerous',rl=document.getElementById('readiness-line'); if(rl)rl.textContent=`${ready} readiness. Army power ${fmt1(p.total)}. Queue ${G.army.trainingQueue.length}.`; const list=document.getElementById('army-list'); if(!list)return; list.innerHTML=Object.keys(UNITS).map(id=>{const d=UNITS[id],ok=unitUnlocked(id),can=ok&&hasCost(d.cost); return`<div class="unit-row"><div class="grow"><div class="line-main">${d.name}: ${fmtInt(G.army.units[id])} (${fmtInt(G.army.wounded[id])} wounded)</div><div class="line-sub">${ok?d.role+' - '+costText(d.cost)+', '+d.time+'s':'Needs '+(CHAMBERS[d.unlock]?.name||'unlock')}</div></div><button class="btn-small ${can?'ready':''}" data-train="${id}" ${can?'':'disabled'}>Train</button></div>`;}).join(''); list.querySelectorAll('[data-train]').forEach(b=>b.addEventListener('click',()=>trainUnit(b.dataset.train)));}
 function trainUnit(id){const d=UNITS[id]; if(!unitUnlocked(id))return; if(G.army.trainingQueue.length>=3){showToast('Training queue is full (max 3).'); return;} if(!payCost(d.cost))return; G.army.trainingQueue.push({unitId:id,timer:d.time,duration:d.time}); saveGame(); updateUI();}
 function readiness(t){const p=armyPower(G,t.traits).total,e=enemyTotal(t.enemyPower),r=p/Math.max(1,e); return r>=1.3?'Safe':r>=0.85?'Risky':'Dangerous';}
-function rewardText(r){const a=[]; if(r.foodMult)a.push(`+${Math.round(r.foodMult*100)}% Food`); if(r.matsMult)a.push(`+${Math.round(r.matsMult*100)}% Mats`); if(r.growthMult)a.push(`+${Math.round(r.growthMult*100)}% Growth`); if(r.foodCapBonus)a.push(`+${r.foodCapBonus} Food cap`); if(r.chitin)a.push(`+${r.chitin} Chitin`); return a.join(', ')||'New access';}
+function rewardText(r,y=null){const a=[]; if(r.foodMult)a.push(`+${Math.round(r.foodMult*100)}% Food`); if(r.matsMult)a.push(`+${Math.round(r.matsMult*100)}% Mats`); if(r.growthMult)a.push(`+${Math.round(r.growthMult*100)}% Growth`); if(r.foodCapBonus)a.push(`+${r.foodCapBonus} Food cap`); if(r.chitin)a.push(`+${r.chitin} Chitin`); const yt=y?yieldText({yield:y}):''; if(yt)a.push(yt); return a.join(', ')||'New access';}
 function renderCampaign(){
   const sup=document.getElementById('supply-text'); if(sup)sup.textContent=`${claimedCount()} claimed territories`;
   renderCampaignMap();
   const list=document.getElementById('campaign-list'); if(!list)return;
   list.innerHTML=renderLoopTracker()+Object.keys(TERRITORIES).map(id=>{
     const t=TERRITORIES[id],s=G.campaign.territories[id],rd=readinessDetail(t);
-    const state=s.claimed?'Claimed':s.unlocked?'Ready':'Locked';
-    const btnLabel=s.claimed?'Bonus':s.unlocked?'Preview':'Locked';
-    const btnClass=s.claimed?'info':s.unlocked?(rd.level==='Safe'?'ready':'danger'):'';
-    const disabled=s.unlocked&&!s.claimed?'':'disabled';
-    const sub=s.claimed?`Bonus active: ${rewardText(t.reward)}`:s.unlocked?`${t.enemy}; ${rd.copy}`:'Claim adjacent territory to reveal this site.';
-    return`<div class="territory-row ${s.claimed?'claimed':''} ${!s.unlocked?'locked':''}" data-territory="${id}"><div class="grow"><div class="line-main">${t.name} - ${state}</div><div class="line-sub">${sub}</div></div><button class="btn-small ${btnClass}" data-battle="${id}" ${disabled}>${btnLabel}</button></div>`;
+    const threat=G.campaign.raid?.threat?.nodeId===id?G.campaign.raid.threat:null;
+    const state=threat?'Threatened':s.claimed?'Claimed':s.unlocked?'Ready':'Locked';
+    const btnLabel=threat?'Defend':s.claimed?'Bonus':s.unlocked?'Preview':'Locked';
+    const btnClass=threat?'danger':s.claimed?'info':s.unlocked?(rd.level==='Safe'?'ready':'danger'):'';
+    const disabled=(s.unlocked&&!s.claimed)||threat?'':'disabled';
+    const yieldLine=yieldText(t);
+    const g=G.army.garrisons?.[id],gText=g?` Garrison ${fmt1(garrisonPower(id,G))}.`:'';
+    const sub=threat?`Rival raid ${Math.ceil(threat.remaining)}s - strength ${fmt1(threat.strength)}.${gText}`:s.claimed?`Bonus active: ${rewardText(t.reward,t.yield)}.${gText}`:s.unlocked?`${t.enemy}; ${rd.copy}${yieldLine?' - '+yieldLine:''}`:'Claim adjacent territory to reveal this site.';
+    const extra=s.claimed||threat?`${g?`<button class="btn-small" data-release-garrison="${id}">Release</button>`:`<button class="btn-small ready" data-garrison="${id}">Garrison</button>`}`:'';
+    return`<div class="territory-row ${s.claimed?'claimed':''} ${threat?'danger':''} ${!s.unlocked?'locked':''}" data-territory="${id}"><div class="grow"><div class="line-main">${t.name} - ${state}</div><div class="line-sub">${sub}</div></div>${extra}<button class="btn-small ${btnClass}" data-battle="${id}" ${disabled}>${btnLabel}</button></div>`;
   }).join('');
   list.querySelectorAll('[data-territory]').forEach(r=>r.addEventListener('click',()=>{G.campaign.selectedTerritoryId=r.dataset.territory; renderCampaignMap();}));
-  list.querySelectorAll('[data-battle]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); showCombatPreview(b.dataset.battle);}));
+  list.querySelectorAll('[data-battle]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); const id=b.dataset.battle; if(G.campaign.raid?.threat?.nodeId===id)resolveRaid(id); else showCombatPreview(id);}));
+  list.querySelectorAll('[data-garrison]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); assignGarrison(b.dataset.garrison);}));
+  list.querySelectorAll('[data-release-garrison]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); releaseGarrison(b.dataset.releaseGarrison);}));
   const log=document.getElementById('battle-log-inline');
   if(log)log.innerHTML=G.battle?.log?.length?G.battle.log.slice(-2).map(x=>`<div class="battle-line">${x}</div>`).join(''):'';
 }
-function renderCampaignMap(){const svg=document.getElementById('map-svg'); if(!svg)return; const ids=Object.keys(TERRITORIES),pts=[[48,72],[135,42],[135,112],[230,52],[230,124],[326,88]]; svg.setAttribute('viewBox','0 0 374 170'); svg.innerHTML=ids.map((id,i)=>{const s=G.campaign.territories[id],fill=s.claimed?'#5fb04a':s.unlocked?'#e8b84b':'#8a7560'; return`<g data-territory="${id}"><circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="17" fill="${fill}" stroke="#2d2217" stroke-width="2"></circle><text x="${pts[i][0]}" y="${pts[i][1]+32}" class="node-svg-label">${TERRITORIES[id].name.split(' ')[0]}</text></g>`;}).join(''); svg.querySelectorAll('g[data-territory]').forEach(g=>g.addEventListener('click',()=>{G.campaign.selectedTerritoryId=g.dataset.territory; updateUI();}));}
+function renderCampaignMap(){const svg=document.getElementById('map-svg'); if(!svg)return; const ids=Object.keys(TERRITORIES),pts=[[48,72],[135,42],[135,112],[230,52],[230,124],[326,88]]; svg.setAttribute('viewBox','0 0 374 170'); svg.innerHTML=ids.map((id,i)=>{const s=G.campaign.territories[id],threat=G.campaign.raid?.threat?.nodeId===id,fill=threat?'#c84b31':s.claimed?'#5fb04a':s.unlocked?'#e8b84b':'#8a7560'; return`<g data-territory="${id}"><circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="17" fill="${fill}" stroke="#2d2217" stroke-width="2"></circle><text x="${pts[i][0]}" y="${pts[i][1]+32}" class="node-svg-label">${TERRITORIES[id].name.split(' ')[0]}</text></g>`;}).join(''); svg.querySelectorAll('g[data-territory]').forEach(g=>g.addEventListener('click',()=>{G.campaign.selectedTerritoryId=g.dataset.territory; updateUI();}));}
+function renderEvolution(){
+  const list=document.getElementById('evolution-list'); if(!list)return;
+  const unified=G.campaign.unified?'Unified region bonus active.':'Claim every node to unify this region.';
+  list.innerHTML=`<div class="panel-card"><div class="line-main">Pheromones: ${fmtInt(G.resources.pheromones)}</div><div class="line-sub">${unified} Flight bonus +${G.prestige.unificationBonus||0}.</div></div>`+Object.entries(EVOLUTIONS).map(([id,e])=>{
+    const done=hasEvolution(id), locked=e.prereq&&!hasEvolution(e.prereq), can=!done&&!locked&&G.resources.pheromones>=e.cost;
+    return`<div class="unit-row"><div class="grow"><div class="line-main">${e.name}${done?' ✓':''}</div><div class="line-sub">${locked?'Needs '+EVOLUTIONS[e.prereq].name:e.desc+' - '+e.cost+' pheromones'}</div></div><button class="btn-small ${can?'ready':''}" data-evolve="${id}" ${can?'':'disabled'}>${done?'Known':'Unlock'}</button></div>`;
+  }).join('');
+  list.querySelectorAll('[data-evolve]').forEach(b=>b.addEventListener('click',()=>spendEvolution(b.dataset.evolve)));
+}
 function showCombatPreview(id){
-  const t=TERRITORIES[id],p=armyPower(G,t.traits),e=t.enemyPower,scouted=hasChamber('scout'),rd=readinessDetail(t);
+  if(window._pendingNodeId!==id||!window._muster)window._muster=defaultMuster();
+  const t=TERRITORIES[id],p=musterPower(t.traits),e=t.enemyPower,scouted=hasChamber('scout'),rd=readinessDetail(t);
+  const ratio=p.total/Math.max(1,enemyTotal(e)), musterReady=ratio>=1.3?'Safe':ratio>=0.85?'Risky':'Dangerous';
   document.getElementById('combat-overlay').classList.add('active');
   document.getElementById('combat-preview').classList.add('active');
   document.getElementById('battle-arena').classList.remove('active');
   document.getElementById('combat-results').classList.remove('active');
   document.getElementById('cp-title').textContent=`Battle Preview: ${t.name}`;
-  document.getElementById('cp-enemy').textContent=`${t.enemy} — ${readiness(t)}`;
-  document.getElementById('cp-enemy').textContent=`${t.enemy} - ${rd.level}`;
+  document.getElementById('cp-enemy').textContent=`${t.enemy} - ${musterReady}`;
   const ev=v=>scouted?v:'??';
   const lanes=[['Front',p.front,e.front],['Swarm',p.swarm,e.swarm],['Ranged',p.ranged,e.ranged],['Support',p.support,e.support]];
   document.getElementById('cp-details').innerHTML=lanes.map(l=>`<div class="cp-row"><span>${l[0]}</span><span class="val">${fmt1(l[1])} / ${ev(l[2])}</span></div>`).join('');
+  renderMusterControls(id);
   const hint=(t.traits||[]).map(tr=>ENEMY_HINTS[tr]).find(Boolean);
-  document.getElementById('cp-outcome').innerHTML=`Estimated: <b>${readiness(t)}</b>${scouted?'':' · build Scout Tunnel for exact numbers'}${hint?`<br><span class="cp-hint">${hint}</span>`:''}`;
-  document.getElementById('cp-outcome').innerHTML=`<b>${rd.copy}</b>${scouted?'':'<br><span class="cp-hint">Build Scout Tunnel for exact enemy numbers.</span>'}<br><span class="cp-hint">${rd.action}</span>`;
+  document.getElementById('cp-outcome').innerHTML=`<b>${musterReady} with mustered party.</b>${scouted?'':'<br><span class="cp-hint">Build Scout Tunnel for exact enemy numbers.</span>'}<br><span class="cp-hint">${rd.action}</span>`;
   window._pendingNodeId=id;
   renderFormationControls('preview-formation-buttons');
+}
+function renderMusterControls(id){
+  const el=document.getElementById('muster-controls'); if(!el)return;
+  const m=currentMuster(), free=freeUnits(G);
+  el.innerHTML=`<div class="panel-card"><div class="mini-title">Muster</div>${Object.keys(UNITS).map(uid=>{const max=free[uid]||0,val=Math.min(m.units[uid]||0,max); m.units[uid]=val; return`<div class="unit-row"><div class="grow"><div class="line-main">${UNITS[uid].name}</div><div class="line-sub">${val}/${max} deploy; rest garrison home</div></div><button class="btn-small" data-muster-unit="${uid}" data-delta="-1">-</button><button class="btn-small ready" data-muster-unit="${uid}" data-delta="1">+</button></div>`;}).join('')}${aliveChampions(G).map(c=>`<div class="unit-row"><div class="grow"><div class="line-main">${c.name}</div><div class="line-sub">Lv${c.level} ${UNITS[c.caste].name} - ${c.traits.join(', ')}</div></div><button class="btn-small ${m.championIds.includes(c.id)?'ready':''}" data-muster-champ="${c.id}">${m.championIds.includes(c.id)?'Deployed':'Home'}</button></div>`).join('')}</div>`;
+  el.querySelectorAll('[data-muster-unit]').forEach(b=>b.addEventListener('click',()=>{const uid=b.dataset.musterUnit, max=free[uid]||0; m.units[uid]=Math.max(0,Math.min(max,(m.units[uid]||0)+parseInt(b.dataset.delta,10))); showCombatPreview(id);}));
+  el.querySelectorAll('[data-muster-champ]').forEach(b=>b.addEventListener('click',()=>{const cid=b.dataset.musterChamp; m.championIds=m.championIds.includes(cid)?m.championIds.filter(x=>x!==cid):m.championIds.concat(cid); showCombatPreview(id);}));
 }
 // Removed: dead duplicate startCombat (superseded by the startCombat assignment below).
 // It produced Title-Case results ('Clean Victory') that applyBattle (snake_case keys)
@@ -4036,7 +4300,7 @@ function applyBattle(id,result,r3){
     G.army.units[u]-=cas; G.army.wounded[u]+=wnd; // permanent share is simply removed
   });
 }
-function claimState(s,id){const st=s.campaign.territories[id]; if(!st)return; Object.assign(st,{state:'claimed',unlocked:true,claimed:true,battleCleared:true}); (TERRITORIES[id].unlocks||[]).forEach(n=>{if(s.campaign.territories[n]&&!s.campaign.territories[n].claimed)Object.assign(s.campaign.territories[n],{state:'available',unlocked:true});}); const r=TERRITORIES[id].reward; if(r.chitin)s.resources.chitin=Math.min(s.caps.chitin,s.resources.chitin+r.chitin); if(r.pheromones)s.resources.pheromones=Math.min(s.caps.pheromones,s.resources.pheromones+r.pheromones); refreshUnlocks(s);}
+function claimState(s,id){const st=s.campaign.territories[id]; if(!st)return; Object.assign(st,{state:'claimed',unlocked:true,claimed:true,battleCleared:true}); if(!s.campaign.recruitTimers)s.campaign.recruitTimers={}; if(typeof s.campaign.recruitTimers[id]!=='number')s.campaign.recruitTimers[id]=0; (TERRITORIES[id].unlocks||[]).forEach(n=>{if(s.campaign.territories[n]&&!s.campaign.territories[n].claimed)Object.assign(s.campaign.territories[n],{state:'available',unlocked:true});}); const r=TERRITORIES[id].reward; if(r.chitin)s.resources.chitin=Math.min(s.caps.chitin,s.resources.chitin+r.chitin); if(r.pheromones)s.resources.pheromones=Math.min(s.caps.pheromones,s.resources.pheromones+r.pheromones); refreshUnlocks(s); checkRegionUnified(s);}
 function closeCombatOverlay(){document.getElementById('combat-overlay').classList.remove('active'); document.getElementById('combat-preview').classList.remove('active'); document.getElementById('battle-arena').classList.remove('active'); document.getElementById('combat-results').classList.remove('active'); window._pendingNodeId=null; window._battleFlow=null; if(window._resultToast){showToast(window._resultToast); window._resultToast=null;} updateUI();}
 function resetGame(){G=makeState(); try{localStorage.removeItem(SAVE_KEY);}catch(e){} buildConquestUI(); updateUI();}
 
@@ -4068,6 +4332,15 @@ tick=function(s,dt){
   conquestTickBase(s,dt);
   recoverWounded(s,dt);
   completeSlotsForProgress(s);
+  if(!s.session.offlineApplying)tickRaids(s,dt);
+};
+const conquestOfflineBase=applyOfflineProgress;
+applyOfflineProgress=function(s,elapsed){
+  s.session.offlineApplying=true;
+  const res=conquestOfflineBase(s,elapsed);
+  s.session.offlineApplying=false;
+  if(s.campaign.raid?.threat)showToast(`Rival scouts mass at ${TERRITORIES[s.campaign.raid.threat.nodeId].name}.`);
+  return res;
 };
 const conquestMigrateBase=migrate;
 migrate=function(raw){
@@ -4137,12 +4410,14 @@ renderBuild=function(){
   completeSlotsForProgress(G);
   const slots=document.getElementById('build-slots'); if(!slots)return;
   bindBuildSlotDelegation();
+  const combos=activeCombos(G);
   slots.innerHTML=G.buildings.slots.map((sl,i)=>{
     const d=CHAMBERS[sl.buildingId],pct=sl.status==='building'?(1-sl.buildTimer/sl.buildDuration)*100:0,sel=sl.id===G.buildings.activeBuildSlotId;
     const nm=d?d.name+(sl.status==='complete'&&sl.level?` Lv${sl.level}`:''):(sl.status==='locked'?'Locked Slot':'Empty Chamber');
     const lock=i===4?'Claim 2 lands':'Claim 4 lands';
     const st=sl.status==='building'?Math.ceil(sl.buildTimer)+'s left':sl.status==='locked'?lock:(sl.status==='complete'&&(sl.level||1)<3?'Tap to upgrade':sl.status==='empty'?'Choose chamber':'Max level');
-    return`<button class="slot-card ${sl.status}${sel?' selected':''}" data-slot="${sl.id}"><div class="slot-name">${nm}</div><div class="slot-state">${st}</div>${sl.status==='building'?`<div class="timer-mini"><div style="width:${pct}%"></div></div>`:''}</button>`;
+    const combo=combos.find(c=>c.slots.includes(sl.id));
+    return`<button class="slot-card ${sl.status}${sel?' selected':''}" data-slot="${sl.id}"><div class="slot-name">${nm}</div><div class="slot-state">${st}</div>${combo?`<div class="line-sub">Combo: ${combo.name} ✓</div>`:''}${sl.status==='building'?`<div class="timer-mini"><div style="width:${pct}%"></div></div>`:''}</button>`;
   }).join('');
   slots.querySelectorAll('[data-slot]').forEach(b=>{const tap=()=>selectBuildSlot(b.dataset.slot); b.addEventListener('pointerdown',tap); b.addEventListener('click',tap);});
   const picker=document.getElementById('chamber-picker'); if(!picker)return;
@@ -4150,27 +4425,37 @@ renderBuild=function(){
   const active=G.buildings.slots.some(x=>x.status==='building');
   if(selected&&selected.status==='complete'){
     const d=CHAMBERS[selected.buildingId],lvl=selected.level||1;
-    if(lvl>=3){picker.innerHTML=renderLoopTracker()+`<div class="panel-card"><div class="line-main">${d.name} - Max level</div><div class="line-sub">${d.desc}</div></div>`;}
-    else{const cost={}; Object.keys(d.cost).forEach(k=>cost[k]=Math.round(d.cost[k]*Math.pow(1.8,lvl))); const time=Math.round(d.time*Math.pow(1.5,lvl)); const can=!active&&hasCost(cost); picker.innerHTML=renderLoopTracker()+`<div class="panel-card"><div class="line-main">${d.name} Lv${lvl} selected</div><div class="line-sub">${d.desc}</div></div><button class="picker-btn" data-upgrade="${selected.id}" ${can?'':'disabled'}>${can?'Upgrade to Lv'+(lvl+1):(active?'Construction busy':'Need '+costText(cost))}<br><span class="line-sub">${costText(cost)} ${time}s</span></button>`;}
+    const potentials=potentialCombosForSlot(selected,null,G);
+    const comboHint=potentials.length?potentials.map(c=>`<div class="line-sub">Combo: ${c.name} ✓ ${c.hint}</div>`).join(''):'<div class="line-sub">No adjacent combo for this chamber.</div>';
+    if(lvl>=3){picker.innerHTML=renderLoopTracker()+comboSummaryHTML(G)+`<div class="panel-card"><div class="line-main">${d.name} - Max level</div><div class="line-sub">${d.desc}</div>${comboHint}</div>`;}
+    else{const cost={}; Object.keys(d.cost).forEach(k=>cost[k]=Math.round(d.cost[k]*Math.pow(1.8,lvl))); const time=Math.round(d.time*Math.pow(1.5,lvl)); const can=!active&&hasCost(cost); picker.innerHTML=renderLoopTracker()+comboSummaryHTML(G)+`<div class="panel-card"><div class="line-main">${d.name} Lv${lvl} selected</div><div class="line-sub">${d.desc}</div>${comboHint}</div><button class="picker-btn" data-upgrade="${selected.id}" ${can?'':'disabled'}>${can?'Upgrade to Lv'+(lvl+1):(active?'Construction busy':'Need '+costText(cost))}<br><span class="line-sub">${costText(cost)} ${time}s</span></button>`;}
     picker.querySelectorAll('[data-upgrade]').forEach(b=>b.addEventListener('click',()=>startUpgrade(b.dataset.upgrade)));
     return;
   }
-  if(!selected||selected.status!=='empty'){picker.innerHTML=renderLoopTracker()+`<div class="panel-card"><div class="line-main">${selected&&selected.status==='building'?'Construction in progress':'Locked chamber slot'}</div><div class="line-sub">${selected&&selected.status==='building'?'One build runs at a time.':'Claim more territory to open new slots.'}</div></div>`; return;}
+  if(!selected||selected.status!=='empty'){picker.innerHTML=renderLoopTracker()+comboSummaryHTML(G)+`<div class="panel-card"><div class="line-main">${selected&&selected.status==='building'?'Construction in progress':'Locked chamber slot'}</div><div class="line-sub">${selected&&selected.status==='building'?'One build runs at a time.':'Claim more territory to open new slots.'}</div></div>`; return;}
   const choices=unlockedChambers().filter(id=>!G.buildings.slots.some(x=>x.buildingId===id)).slice(0,4);
-  picker.innerHTML=renderLoopTracker()+`<div class="panel-card"><div class="line-main">${selected.id.replace('slot_','Slot ')} selected</div><div class="line-sub">Choose the next chamber for this slot.</div></div>`+(choices.length?choices.map(id=>{const d=CHAMBERS[id],disabled=active||!hasCost(d.cost); return`<button class="picker-btn" data-build="${id}" ${disabled?'disabled':''}>${disabled&&!active?'Need '+costText(d.cost):d.name}<br><span class="line-sub">${costText(d.cost)} ${d.time}s</span></button>`;}).join(''):'<div class="panel-card"><div class="line-main">All available chambers are built.</div><div class="line-sub">Claim more territory to unlock new chamber types.</div></div>');
+  picker.innerHTML=renderLoopTracker()+comboSummaryHTML(G)+`<div class="panel-card"><div class="line-main">${selected.id.replace('slot_','Slot ')} selected</div><div class="line-sub">Choose the next chamber for this slot.</div></div>`+(choices.length?choices.map(id=>{const d=CHAMBERS[id],disabled=active||!hasCost(d.cost),pot=potentialCombosForSlot(selected,id,G); const hint=pot.length?`<br><span class="line-sub">Place here -> ${pot.map(c=>c.name).join(', ')}</span>`:''; return`<button class="picker-btn" data-build="${id}" ${disabled?'disabled':''}>${disabled&&!active?'Need '+costText(d.cost):d.name}<br><span class="line-sub">${costText(d.cost)} ${d.time}s</span>${hint}</button>`;}).join(''):'<div class="panel-card"><div class="line-main">All available chambers are built.</div><div class="line-sub">Claim more territory to unlock new chamber types.</div></div>');
   picker.querySelectorAll('[data-build]').forEach(b=>b.addEventListener('click',()=>startBuild(b.dataset.build)));
 };
 renderArmy=function(){
   const t=TERRITORIES[G.campaign.selectedTerritoryId]||TERRITORIES[openTerritoryEntry()?.[0]],rd=readinessDetail(t),p=armyPower(G,t&&t.traits),rl=document.getElementById('readiness-line');
   const wounded=Object.values(G.army.wounded).reduce((a,b)=>a+b,0);
-  if(rl)rl.textContent=`${rd.level} vs ${t?t.name:'next site'} - Power ${fmt1(p.total)} - Queue ${G.army.trainingQueue.length}/3${wounded?` - Recovering ${wounded}`:''}`;
+  const gPower=Object.keys(G.army.garrisons||{}).reduce((a,id)=>a+garrisonPower(id,G),0);
+  if(rl)rl.textContent=`${rd.level} vs ${t?t.name:'next site'} - Power ${fmt1(p.total)} - Garrison ${fmt1(gPower)} - Queue ${G.army.trainingQueue.length}/3${wounded?` - Recovering ${wounded}`:''}`;
   const list=document.getElementById('army-list'); if(!list)return;
   list.innerHTML=renderLoopTracker()+Object.keys(UNITS).map(id=>{
     const d=UNITS[id],ok=unitUnlocked(id),can=ok&&hasCost(d.cost),locked=!ok;
     const button=locked?`Needs ${CHAMBERS[d.unlock]?.name||'unlock'}`:can?'Train':`Need ${costText(d.cost)}`;
-    return`<div class="unit-row"><div class="grow"><div class="line-main">${d.name}: ${fmtInt(G.army.units[id])} (${fmtInt(G.army.wounded[id])} wounded)</div><div class="line-sub"><span class="unit-role">${d.role}</span> - ${locked?'Locked by chamber':`${d.time}s training`}</div></div><button class="btn-small ${can?'ready':''}" data-train="${id}" ${can?'':'disabled'}>${button}</button></div>`;
+    const promote=(G.army.survivorWins[id]||0)>=promotionThreshold(G)&&G.army.units[id]>0&&aliveChampions(G).length<6;
+    return`<div class="unit-row"><div class="grow"><div class="line-main">${d.name}: ${fmtInt(G.army.units[id])} (${fmtInt(G.army.wounded[id])} wounded)</div><div class="line-sub"><span class="unit-role">${d.role}</span> - ${locked?'Locked by chamber':`${d.time}s training`} - molt ${G.army.survivorWins[id]||0}/${promotionThreshold(G)}</div></div><button class="btn-small ${can?'ready':''}" data-train="${id}" ${can?'':'disabled'}>${button}</button>${promote?`<button class="btn-small ready" data-promote="${id}">Molt</button>`:''}</div>`;
   }).join('');
   list.querySelectorAll('[data-train]').forEach(b=>b.addEventListener('click',()=>trainUnit(b.dataset.train)));
+  list.querySelectorAll('[data-promote]').forEach(b=>b.addEventListener('click',()=>promoteChampion(b.dataset.promote)));
+  const champs=document.getElementById('champion-list');
+  if(champs)champs.innerHTML=`<div class="panel-card"><div class="mini-title">Champion Ants</div>${aliveChampions(G).length?aliveChampions(G).map(c=>`<div class="unit-row"><div class="grow"><div class="line-main">${c.name}</div><div class="line-sub">${UNITS[c.caste].name} Lv${c.level} XP ${c.xp||0} - ${c.traits.join(', ')}</div></div></div>`).join(''):'<div class="line-sub">Win battles with units to unlock Royal Guard molts.</div>'}</div>`;
+  const adap=document.getElementById('adaptation-list');
+  if(adap)adap.innerHTML=`<div class="panel-card"><div class="mini-title">Chitin Adaptations</div>${Object.entries(ADAPTATIONS).map(([id,d])=>{const tier=adaptationTier(id),unlocked=adaptationUnlocked(id),cost={}; Object.entries(d.cost).forEach(([k,v])=>cost[k]=Math.round(v*Math.pow(1.8,tier))); const can=unlocked&&tier<3&&hasCost(cost); return`<div class="unit-row"><div class="grow"><div class="line-main">${d.name} ${tier?`T${tier}`:'-'}</div><div class="line-sub">${unlocked?`${d.desc}; ${tier<3?costText(cost):'max tier'}`:`Needs ${d.unlock==='start'?'recipe':CHAMBERS[d.unlock]?.name||'unlock'}`}</div></div><button class="btn-small ${can?'ready':''}" data-craft="${id}" ${can?'':'disabled'}>${tier>=3?'Max':'Craft'}</button></div>`;}).join('')}</div>`;
+  adap?.querySelectorAll('[data-craft]').forEach(b=>b.addEventListener('click',()=>craftAdaptation(b.dataset.craft)));
 };
 function resolveBattle(id){
   const t=TERRITORIES[id],e=t.enemyPower,p=armyPower(G,t.traits);
@@ -4195,9 +4480,11 @@ function showResults(out){
   document.getElementById('cr-banner').textContent=rc.title;
   const laneNames=['Front','Swarm','Ranged'];
   document.getElementById('cr-stats').innerHTML=`<div class="cr-body">${rc.body}</div>`+out.scores.map((s,i)=>`<div class="cr-lane">Round ${i+1} ${laneNames[i]}: ${fmt1(s)}x — ${s>=1?'won':'lost'}</div>`).join('');
-  document.getElementById('cr-salvage').textContent=out.result.includes('victory')?`Territory claimed: ${out.t.name} (${rewardText(out.t.reward)})`:'No ground gained. Regroup and strike again.';
+  document.getElementById('cr-salvage').textContent=out.result.includes('victory')?`Territory claimed: ${out.t.name} (${rewardText(out.t.reward,out.t.yield)})`:'No ground gained. Regroup and strike again.';
   const wounded=Object.keys(UNITS).filter(u=>G.army.wounded[u]>0).map(u=>`${UNITS[u].name} ${G.army.wounded[u]}`).join(', ');
-  document.getElementById('cr-recovery').textContent=wounded?'Wounded recovering: '+wounded:'No wounded — the colony stands strong.';
+  const dead=G._lastChampionDeaths?.length?` Fallen champion: ${G._lastChampionDeaths.join(', ')}.`:'';
+  G._lastChampionDeaths=[];
+  document.getElementById('cr-recovery').textContent=(wounded?'Wounded recovering: '+wounded:'No wounded - the colony stands strong.')+dead;
   document.getElementById('btn-close-results').textContent=rc.button;
   window._resultToast=rc.toast;
   updateUI();
@@ -4312,15 +4599,23 @@ function applyBattleWithShields(id, result, r3, shieldsUsed) {
   const shieldReduction = Math.pow(0.7, shieldsUsed);
   const rate = base * f.casualtyMult * armorReduction() * shieldReduction;
   const permShare = result==='defeat' ? 0.5 : 0.3;
+  const mustered=window._battleFlow?.muster?.units||G.army.units;
   Object.keys(UNITS).forEach(u=>{
     if(u==='scouts' && r3>=0.75) return;
-    const n=G.army.units[u]; if(n<=0) return;
+    const n=mustered[u]||0; if(n<=0) return;
     const cas=Math.max(0, Math.floor(n*rate));
     if(cas<=0) return;
     const perm=Math.floor(cas*permShare), wnd=cas-perm;
     G.army.units[u]=Math.max(0, G.army.units[u]-cas);
     G.army.wounded[u]=Math.max(0, G.army.wounded[u]+wnd);
   });
+  if(result.includes('victory')){
+    Object.keys(UNITS).forEach(u=>{if((mustered[u]||0)>0)G.army.survivorWins[u]=(G.army.survivorWins[u]||0)+1;});
+  }
+  awardChampionXP(result,window._battleFlow?.muster?.championIds||[]);
+  const dead=rollChampionDeaths(result,window._battleFlow?.muster?.championIds||[]);
+  if(dead.length)G._lastChampionDeaths=dead;
+  checkRegionUnified(G);
 }
 function skipBattle() {
   const flow = window._battleFlow;
@@ -4330,12 +4625,16 @@ function skipBattle() {
     flow.phase++;
     const idx = flow.phase - 1;
     if (idx >= 0 && idx <= 2) {
-      const t=flow.t, e=t.enemyPower, p=armyPower(G, t.traits);
+      const t=flow.t, e=t.enemyPower, proxy=JSON.parse(JSON.stringify(G)); proxy.army.units=flow.muster.units; const p=armyPower(proxy, t.traits, flow.muster.championIds);
       const lane=(pp,ep)=>ep<=0?(pp>0?pp:1):pp/Math.max(1,ep);
       let powerMult = 1.0;
       let scoreBonus = 0.0;
       if (flow.abilities.rally) powerMult *= 1.5;
       if (flow.abilities.acid) scoreBonus += 0.5;
+      const champs=aliveChampions(G).filter(c=>flow.muster.championIds.includes(c.id));
+      if(idx===2&&champs.some(c=>c.traits.includes('Acid Burst'))){scoreBonus+=.25; flow.log.push('Acid Burst champion skill ignites.');}
+      if(idx===0&&champs.some(c=>c.traits.includes('Bulwark')))flow.shieldsUsedCount++;
+      if(idx===1&&flow.playerStart<flow.enemyStart&&champs.some(c=>c.traits.includes('Frenzy')))powerMult*=1.3;
       let score = 0;
       if (idx === 0) {
         score = lane(p.front * powerMult, e.front) + scoreBonus;
@@ -4362,7 +4661,7 @@ function skipBattle() {
   else result='defeat';
   const endMsg = pick(result.includes('victory') ? LOG_POOLS.victoryClose : LOG_POOLS.defeatClose);
   flow.log.push(endMsg);
-  G.battle={territoryId: flow.id, round: 3, phase: 'resolved', scores: flow.scores, playerSnapshot: JSON.parse(JSON.stringify(G.army.units)), enemySnapshot: flow.t.enemyPower, log: flow.log, result: result};
+  G.battle={territoryId: flow.id, round: 3, phase: 'resolved', scores: flow.scores, playerSnapshot: JSON.parse(JSON.stringify(flow.muster.units)), enemySnapshot: flow.t.enemyPower, log: flow.log, result: result};
   applyBattleWithShields(flow.id, result, flow.scores[2], flow.shieldsUsedCount);
   saveGame();
   addBattleLine(endMsg, result.includes('victory') ? 'player' : 'enemy');
@@ -4385,12 +4684,16 @@ function advanceBattle(){
   }
   if(flow.phase>=1&&flow.phase<=3){
     const idx=flow.phase-1;
-    const t=flow.t, e=t.enemyPower, p=armyPower(G, t.traits);
+      const t=flow.t, e=t.enemyPower, proxy=JSON.parse(JSON.stringify(G)); proxy.army.units=flow.muster.units; const p=armyPower(proxy, t.traits, flow.muster.championIds);
     const lane=(pp,ep)=>ep<=0?(pp>0?pp:1):pp/Math.max(1,ep);
     let powerMult = 1.0;
     let scoreBonus = 0.0;
     if (flow.abilities.rally) powerMult *= 1.5;
     if (flow.abilities.acid) scoreBonus += 0.5;
+    const champs=aliveChampions(G).filter(c=>flow.muster.championIds.includes(c.id));
+    if(idx===2&&champs.some(c=>c.traits.includes('Acid Burst'))){scoreBonus+=.25; flow.log.push('Acid Burst champion skill ignites.');}
+    if(idx===0&&champs.some(c=>c.traits.includes('Bulwark'))){flow.shieldsUsedCount++; addBattleLine('Bulwark champion skill braces the line.','player');}
+    if(idx===1&&flow.playerStart<flow.enemyStart&&champs.some(c=>c.traits.includes('Frenzy'))){powerMult*=1.3; addBattleLine('Frenzy champion skill surges through the swarm.','player');}
     let score = 0;
     if (idx === 0) {
       score = lane(p.front * powerMult, e.front) + scoreBonus;
@@ -4429,7 +4732,7 @@ function advanceBattle(){
   else result='defeat';
   const endMsg = pick(result.includes('victory') ? LOG_POOLS.victoryClose : LOG_POOLS.defeatClose);
   flow.log.push(endMsg);
-  G.battle={territoryId:flow.id,round:3,phase:'resolved',scores:flow.scores,playerSnapshot:JSON.parse(JSON.stringify(G.army.units)),enemySnapshot:flow.t.enemyPower,log:flow.log,result:result};
+  G.battle={territoryId:flow.id,round:3,phase:'resolved',scores:flow.scores,playerSnapshot:JSON.parse(JSON.stringify(flow.muster.units)),enemySnapshot:flow.t.enemyPower,log:flow.log,result:result};
   applyBattleWithShields(flow.id,result,flow.scores[2],flow.shieldsUsedCount);
   saveGame();
   addBattleLine(endMsg,result.includes('victory')?'player':'enemy');
@@ -4440,7 +4743,8 @@ function advanceBattle(){
 startCombat=function(){
   const id=window._pendingNodeId; if(!id)return;
   const t=TERRITORIES[id];
-  const playerStart=battleUnitCount(G.army.units), enemyStart=enemyUnitCount(t.enemyPower);
+  const m=JSON.parse(JSON.stringify(currentMuster()));
+  const playerStart=battleUnitCount(m.units)+(m.championIds?.length||0), enemyStart=enemyUnitCount(t.enemyPower);
   document.getElementById('combat-preview').classList.remove('active');
   document.getElementById('battle-arena').classList.add('active');
   document.getElementById('combat-results').classList.remove('active');
@@ -4478,7 +4782,8 @@ startCombat=function(){
     log: [],
     abilities: { shield: false, rally: false, acid: false },
     shieldsUsedCount: 0,
-    playerSnapshot: JSON.parse(JSON.stringify(G.army.units))
+    muster:m,
+    playerSnapshot: JSON.parse(JSON.stringify(m.units))
   };
   setBattleCounts(playerStart,enemyStart);
   resetCombatTriggersUI();
