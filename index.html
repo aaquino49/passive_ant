@@ -662,8 +662,11 @@
   }
   #battle-arena.active { display: flex; }
   #battle-stage {
-    height: 180px; position: relative; overflow: hidden;
-    background: linear-gradient(180deg, rgba(26,16,8,.45) 0%, rgba(42,24,16,.25) 50%, rgba(26,16,8,.55) 100%), url('assets/bg_battle_arena.png');
+    height: 220px; position: relative; overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 58%, rgba(110,18,25,.36) 0 18%, transparent 34%),
+      linear-gradient(180deg, rgba(26,16,8,.38) 0%, rgba(42,24,16,.16) 50%, rgba(26,16,8,.58) 100%),
+      url('assets/bg_battle_arena.png');
     background-size: cover; background-position: center;
     display: flex; align-items: center; justify-content: center;
   }
@@ -684,17 +687,35 @@
     top: 50%; left: 50%; transform: translate(-50%,-50%);
   }
   .battle-side {
-    position: absolute; top: 48%; transform: translateY(-50%);
-    display: flex; align-items: center; justify-content: center;
-    gap: 3px; width: 42%; min-height: 74px;
-    transition: transform 4.8s ease-in-out;
+    position: absolute; inset: 0;
+    pointer-events: none;
   }
-  #battle-player-squad { left: -4%; }
-  #battle-enemy-squad { right: -4%; }
-  #battle-stage.phase-charge #battle-player-squad { transform: translate(32%, -50%); }
-  #battle-stage.phase-charge #battle-enemy-squad { transform: translate(-32%, -50%); }
-  #battle-stage.phase-clash #battle-player-squad { transform: translate(54%, -50%); }
-  #battle-stage.phase-clash #battle-enemy-squad { transform: translate(-54%, -50%); }
+  .battle-combatant {
+    position: absolute;
+    left: var(--x); top: var(--y);
+    z-index: var(--z, 2);
+    transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(var(--rot, 0deg));
+    filter: drop-shadow(0 3px 2px rgba(0,0,0,.36));
+    will-change: transform;
+  }
+  .battle-combatant.player { --rush-x: var(--charge, 78px); }
+  .battle-combatant.enemy { --rush-x: calc(var(--charge, 78px) * -1); }
+  .battle-combatant.enemy .battle-sprite-shell { transform: scaleX(-1); }
+  #battle-stage.phase-charge .battle-combatant {
+    animation: battleRush var(--dur, 1.1s) ease-in-out var(--delay, 0s) infinite alternate;
+  }
+  #battle-stage.phase-clash .battle-combatant {
+    animation: battleScramble var(--dur, .72s) ease-in-out var(--delay, 0s) infinite alternate;
+  }
+  .battle-sprite-shell { display: block; }
+  @keyframes battleRush {
+    from { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(var(--rot, 0deg)); }
+    to { transform: translate(calc(-50% + var(--rush-x)), calc(-50% + var(--bob, 0px))) scale(var(--scale, 1)) rotate(calc(var(--rot, 0deg) + var(--tilt, 0deg))); }
+  }
+  @keyframes battleScramble {
+    from { transform: translate(calc(-50% + var(--rush-x) - 12px), calc(-50% + var(--bob, 0px))) scale(var(--scale, 1)) rotate(calc(var(--rot, 0deg) - 8deg)); }
+    to { transform: translate(calc(-50% + var(--rush-x) + 16px), calc(-50% - var(--bob, 0px))) scale(var(--scale, 1)) rotate(calc(var(--rot, 0deg) + 12deg)); }
+  }
   .battle-unit-dot {
     width: 13px; height: 13px; border-radius: 50%;
     border: 1px solid rgba(45,34,23,.55);
@@ -705,14 +726,26 @@
   .battle-unit-dot.scout { background: #90613a; }
   .battle-enemy-dot { background: #263f47; }
   .battle-splash {
-    position: absolute; width: 80px; height: 56px; z-index: 5; pointer-events: none;
+    position: absolute; width: 96px; height: 68px; z-index: 5; pointer-events: none;
     background:
-      radial-gradient(circle at 22% 48%, rgba(190,22,38,.95) 0 7px, transparent 8px),
-      radial-gradient(circle at 46% 38%, rgba(220,42,52,.85) 0 10px, transparent 11px),
-      radial-gradient(circle at 66% 58%, rgba(135,9,28,.9) 0 6px, transparent 7px),
-      radial-gradient(circle at 78% 28%, rgba(235,75,78,.8) 0 4px, transparent 5px);
-    animation: redSplash 0.9s ease-out forwards;
+      radial-gradient(circle at 19% 48%, rgba(190,14,34,.96) 0 8px, transparent 9px),
+      radial-gradient(circle at 42% 34%, rgba(225,32,49,.88) 0 12px, transparent 13px),
+      radial-gradient(circle at 63% 57%, rgba(126,7,24,.95) 0 7px, transparent 8px),
+      radial-gradient(circle at 79% 26%, rgba(235,68,74,.86) 0 5px, transparent 6px),
+      radial-gradient(circle at 84% 72%, rgba(95,4,19,.82) 0 4px, transparent 5px);
+    mix-blend-mode: multiply;
+    animation: redSplash 1.05s ease-out forwards;
   }
+  .battle-splash::before,
+  .battle-splash::after {
+    content: ""; position: absolute; inset: 8px 0 0 12px;
+    background:
+      radial-gradient(circle at 18% 24%, rgba(150,5,28,.88) 0 2px, transparent 3px),
+      radial-gradient(circle at 38% 72%, rgba(210,18,38,.82) 0 3px, transparent 4px),
+      radial-gradient(circle at 67% 18%, rgba(120,3,20,.74) 0 2px, transparent 3px),
+      radial-gradient(circle at 90% 54%, rgba(190,8,36,.75) 0 2px, transparent 3px);
+  }
+  .battle-splash::after { transform: rotate(22deg) scale(1.18); opacity: .78; }
   @keyframes redSplash {
     0% { opacity: 0; transform: scale(.45) rotate(-8deg); }
     18% { opacity: 1; transform: scale(1.05) rotate(4deg); }
@@ -4517,23 +4550,32 @@ function battleUnitCount(units){return Math.max(1,Object.values(units||{}).reduc
 function enemyUnitCount(enemyPower){return Math.max(3,Math.round(enemyTotal(enemyPower)/2));}
 function renderBattleSquad(elId,count,enemy=false,units=null){
   const el=document.getElementById(elId); if(!el)return;
-  const maxDots=Math.min(8,Math.max(1,count));
+  const maxDots=Math.min(enemy?18:24,Math.max(enemy?12:14,count));
   const classes=units?Object.keys(units).filter(k=>units[k]>0):[];
+  const territoryId=window._battleFlow?.id||G.campaign.selectedTerritoryId;
+  const t = TERRITORIES[territoryId];
+  const eName = t ? t.enemy : 'Earwig Swarm';
+  const enemyTypes = eName === 'Beetle Guard' ? ['beetle','scavenger']
+    : eName === 'Spider Scouts' ? ['predator','scavenger']
+    : eName === 'Ironclad Beetles' ? ['boss','beetle','scavenger']
+    : eName === 'Hornet Nest' ? ['flying','predator','scavenger']
+    : ['scavenger','predator'];
   el.innerHTML=Array.from({length:maxDots},(_,i)=>{
+    const row=i%5;
+    const jitter=()=>Math.round((Math.random()*2-1)*100)/100;
+    const x=(enemy?66:12)+(enemy?Math.random()*27:Math.random()*25);
+    const y=28+row*12+Math.random()*18;
+    const scale=(enemy ? .72 : .62)+Math.random()*(enemy ? .34 : .32);
+    const charge=enemy?(74+Math.random()*46):(70+Math.random()*54);
+    const z=Math.round(2+y/12);
+    const style=`--x:${x.toFixed(1)}%;--y:${y.toFixed(1)}%;--scale:${scale.toFixed(2)};--rot:${(jitter()*18).toFixed(1)}deg;--tilt:${(jitter()*24).toFixed(1)}deg;--bob:${(jitter()*18).toFixed(1)}px;--charge:${charge.toFixed(1)}px;--delay:${(Math.random()*.42).toFixed(2)}s;--dur:${(.58+Math.random()*.72).toFixed(2)}s;--z:${z};`;
     if (!enemy) {
       const uid=classes[i%Math.max(1,classes.length)]||'swarmers';
       const type = uid==='majors'?'major':uid==='spitters'?'spitter':uid==='scouts'?'scout':'swarmer';
-      return `<span class="ant-combat-sprite ${type}"></span>`;
+      return `<span class="battle-combatant player" style="${style}"><span class="battle-sprite-shell"><span class="ant-combat-sprite ${type}"></span></span></span>`;
     } else {
-      const t = TERRITORIES[G.campaign.selectedTerritoryId];
-      const eName = t ? t.enemy : 'Earwig Swarm';
-      let type = 'scavenger';
-      if (eName === 'Beetle Guard') type = 'beetle';
-      else if (eName === 'Spider Scouts') type = 'predator';
-      else if (eName === 'Earwig Swarm') type = 'scavenger';
-      else if (eName === 'Ironclad Beetles') type = 'boss';
-      else if (eName === 'Hornet Nest') type = 'flying';
-      return `<span class="enemy-combat-sprite ${type}"></span>`;
+      const type = enemyTypes[i%enemyTypes.length];
+      return `<span class="battle-combatant enemy" style="${style}"><span class="battle-sprite-shell"><span class="enemy-combat-sprite ${type}"></span></span></span>`;
     }
   }).join('');
 }
@@ -4544,11 +4586,16 @@ function addBattleLine(msg,type='neutral'){
 }
 function addRedSplash(side){
   const stage=document.getElementById('battle-stage'); if(!stage)return;
-  const s=document.createElement('div'); s.className='battle-splash';
-  s.style.left=side==='enemy'?'58%':'28%';
-  s.style.top=(36+Math.random()*18)+'%';
-  stage.appendChild(s);
-  setTimeout(()=>s.remove(),950);
+  const bursts=side==='center'?5:3;
+  for(let i=0;i<bursts;i++){
+    const s=document.createElement('div'); s.className='battle-splash';
+    const base=side==='enemy'?56:side==='player'?42:50;
+    s.style.left=(base+(Math.random()*18-9))+'%';
+    s.style.top=(35+Math.random()*32)+'%';
+    s.style.transform=`rotate(${Math.random()*70-35}deg) scale(${.75+Math.random()*.65})`;
+    stage.appendChild(s);
+    setTimeout(()=>s.remove(),1100);
+  }
 }
 function setBattleCounts(player,enemy){
   document.getElementById('battle-player-count').textContent=fmtInt(player);
@@ -4568,6 +4615,7 @@ function beginBattleBeat(title,buttonLabel,afterDelay){
   setTimeout(()=>{
     if(!window._battleFlow)return;
     document.getElementById('battle-stage').className='phase-clash battle-shake battle-hit-flash';
+    addRedSplash('center');
     setTimeout(()=>document.getElementById('battle-stage').classList.remove('battle-shake','battle-hit-flash'),250);
     setBattleAdvance(buttonLabel,true);
     if(afterDelay)afterDelay(flow);
@@ -4777,7 +4825,7 @@ startCombat=function(){
   document.getElementById('battle-event-log').innerHTML='';
   const enemySprite = document.getElementById('battle-enemy-sprite');
   if (enemySprite) {
-    enemySprite.style.display = 'block';
+    enemySprite.style.display = 'none';
     enemySprite.className = 'enemy-combat-sprite';
     if (t.enemy === 'Beetle Guard') {
       enemySprite.classList.add('beetle');
