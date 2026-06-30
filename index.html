@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Colony Keeper UI Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Colony Keeper</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
 
@@ -24,47 +24,59 @@
     --radius: 14px;
   }
 
-  html {
-    min-height: 100%;
-    background: var(--sand);
-    color: var(--soil);
-    font-family: "Nunito", "Segoe UI", system-ui, sans-serif;
-  }
-
-  body {
-    min-height: 100%;
+  html, body {
+    width: 100%;
+    height: 100%;
     margin: 0;
+    overflow: hidden;
     background:
       radial-gradient(circle at 12% 8%, rgba(207, 131, 24, 0.16), transparent 28rem),
       linear-gradient(180deg, #F3E8C8 0%, var(--sand) 48%, #E6D7AE 100%);
+    color: var(--soil);
+    font-family: "Nunito", "Segoe UI", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  button, a, input, select, textarea, [role="button"] {
-    pointer-events: none;
+  button {
+    border: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.45);
+    opacity: 0.62;
   }
 
   .keeper-shell {
     width: min(100%, 440px);
+    height: 100%;
     margin: 0 auto;
-    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     background: var(--sand);
     box-shadow: 0 0 0 1px rgba(34, 21, 8, 0.12), 0 20px 70px rgba(34, 21, 8, 0.24);
   }
 
   .keeper-page {
-    min-height: 100vh;
-    display: grid;
-    grid-template-rows: 20vh auto;
-    border-bottom: 1px solid rgba(34, 21, 8, 0.14);
+    flex: 1;
+    min-height: 0;
+    display: none;
+    grid-template-rows: 20% minmax(0, 1fr);
     background: var(--sand);
   }
 
+  .keeper-page.active { display: grid; }
+
   .page-image {
     position: relative;
-    min-height: 132px;
+    min-height: 120px;
     isolation: isolate;
-    background-color: var(--soil);
     overflow: hidden;
+    background-color: var(--soil);
   }
 
   .page-image::before {
@@ -133,12 +145,10 @@
 
   .motion-trail::before { left: 74px; top: -16px; }
   .motion-trail::after { left: 118px; top: 10px; }
-
   .build-motion .motion-trail { bottom: 35%; animation-duration: 13s; }
   .army-motion .motion-trail { bottom: 18%; animation-duration: 9s; }
   .map-motion .motion-trail { bottom: 29%; animation-duration: 12s; }
   .evolve-motion .motion-trail { bottom: 40%; animation-duration: 15s; }
-
   .build-motion .motion-glow { animation-duration: 8.5s; }
   .army-motion .motion-glow { opacity: 0.52; animation-duration: 5.5s; }
   .map-motion .motion-glow {
@@ -188,14 +198,12 @@
   .image-caption h1 {
     margin: 0;
     font-family: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
-    font-size: 30px;
+    font-size: clamp(24px, 7.5vw, 32px);
     line-height: 0.96;
     letter-spacing: 0;
   }
 
   .image-caption span {
-    display: inline-flex;
-    align-items: center;
     min-height: 24px;
     padding: 4px 10px;
     border-radius: 999px;
@@ -210,10 +218,13 @@
   }
 
   .page-body {
+    min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 12px;
     padding: 12px 14px 18px;
+    overscroll-behavior: contain;
   }
 
   .resource-hud {
@@ -231,6 +242,8 @@
     color: var(--paper);
     box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.04), 0 3px 0 rgba(34, 21, 8, 0.2);
   }
+
+  .resource-chip.critical { outline: 2px solid var(--red); }
 
   .chip-label,
   .section-kicker,
@@ -260,6 +273,8 @@
     font-weight: 800;
   }
 
+  .chip-rate.neg { color: #F08E7C; }
+
   .status-strip {
     display: flex;
     align-items: center;
@@ -271,6 +286,9 @@
     background: #F0F5E8;
     box-shadow: 0 2px 8px rgba(34, 21, 8, 0.07);
   }
+
+  .status-strip.hungry { background: #FFF3DF; border-color: #E9C278; }
+  .status-strip.starving { background: #FDEAE6; border-color: #D97B68; }
 
   .status-main {
     display: flex;
@@ -290,22 +308,31 @@
     box-shadow: 0 0 7px rgba(75, 126, 60, 0.72);
   }
 
+  .status-strip.hungry .status-dot { background: var(--amber); }
+  .status-strip.starving .status-dot { background: var(--red); }
+
   .status-hint {
     color: var(--amber);
     font-family: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
     font-size: 12px;
     font-weight: 800;
-    white-space: nowrap;
+    text-align: right;
   }
 
-  .panel {
+  .panel,
+  .action-card,
+  .stepper-row,
+  .unit-row,
+  .territory-row,
+  .mutation-row,
+  .slot-card {
     border: 1.5px solid var(--line);
-    border-radius: 16px;
+    border-radius: var(--radius);
     background: var(--paper);
     box-shadow: 0 2px 8px rgba(34, 21, 8, 0.07);
-    overflow: hidden;
   }
 
+  .panel { overflow: hidden; }
   .panel.pad { padding: 14px; }
 
   .panel-row {
@@ -332,10 +359,8 @@
     line-height: 1.35;
   }
 
-  .rate-pos {
-    color: var(--green);
-    font-weight: 800;
-  }
+  .rate-pos { color: var(--green); font-weight: 800; }
+  .rate-neg { color: var(--red); font-weight: 800; }
 
   .section-label {
     display: flex;
@@ -359,50 +384,48 @@
   .stepper-row,
   .unit-row,
   .territory-row,
-  .mutation-row,
-  .slot-row {
+  .mutation-row {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 13px 14px;
-    border: 1.5px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--paper);
-    box-shadow: 0 2px 6px rgba(34, 21, 8, 0.06);
   }
 
-  .grow {
-    flex: 1;
-    min-width: 0;
-  }
+  .grow { flex: 1; min-width: 0; }
 
-  .inert-stepper {
+  .stepper {
     display: grid;
     grid-template-columns: 42px 46px 42px;
     height: 42px;
     flex: 0 0 auto;
   }
 
-  .step-part {
+  .step-btn,
+  .step-count,
+  .amber-btn {
     display: grid;
     place-items: center;
     font-family: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
-    font-size: 20px;
     font-weight: 800;
   }
 
-  .step-part.minus,
-  .step-part.plus,
-  .amber-slab {
+  .step-btn,
+  .amber-btn {
     background: linear-gradient(180deg, var(--honey) 0%, var(--amber) 100%);
     color: var(--soil);
     box-shadow: 0 3px 0 #8A5510;
   }
 
-  .step-part.minus { border-radius: 10px 0 0 10px; }
-  .step-part.plus { border-radius: 0 10px 10px 0; }
+  .step-btn:active,
+  .amber-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #8A5510;
+  }
 
-  .step-part.count {
+  .step-btn.minus { border-radius: 10px 0 0 10px; }
+  .step-btn.plus { border-radius: 0 10px 10px 0; }
+
+  .step-count {
     border-top: 2px solid var(--line-strong);
     border-bottom: 2px solid var(--line-strong);
     background: var(--paper-deep);
@@ -410,23 +433,18 @@
     color: var(--soil);
   }
 
-  .recommendation {
+  .action-card {
     padding: 16px;
-    border: 2px solid var(--amber);
-    border-radius: 16px;
-    background: var(--paper);
+    border-color: var(--amber);
     box-shadow: 0 4px 14px rgba(207, 131, 24, 0.2);
   }
 
-  .amber-slab {
+  .amber-btn {
+    width: 100%;
     min-height: 46px;
-    display: grid;
-    place-items: center;
     margin-top: 13px;
     border-radius: 12px;
-    font-family: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
     font-size: 15px;
-    font-weight: 800;
     letter-spacing: 0;
   }
 
@@ -436,11 +454,18 @@
     gap: 10px;
   }
 
-  .slot-row {
-    min-height: 92px;
-    align-items: flex-start;
-    flex-direction: column;
+  .slot-card {
+    min-height: 112px;
+    padding: 12px;
+    text-align: left;
   }
+
+  .slot-card.selected {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 2px rgba(207, 131, 24, 0.24);
+  }
+
+  .slot-card.locked { opacity: 0.65; }
 
   .slot-icon {
     width: 34px;
@@ -448,9 +473,10 @@
     border-radius: 10px;
     border: 1px solid var(--line);
     background: var(--paper-deep);
-    background-image: var(--icon);
+    background-image: url("assets/icons_chambers_conquest.png");
     background-size: 400% 400%;
     background-position: var(--pos, 0 0);
+    margin-bottom: 9px;
   }
 
   .progress-track {
@@ -468,15 +494,24 @@
     background: linear-gradient(90deg, var(--amber), var(--honey));
   }
 
-  .pill-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .picker-list {
+    display: grid;
+    gap: 9px;
   }
 
-  .pill {
-    display: inline-flex;
-    align-items: center;
+  .picker-btn {
+    width: 100%;
+    padding: 12px;
+    text-align: left;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper);
+  }
+
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .pill,
+  .formation-btn {
     min-height: 34px;
     padding: 7px 11px;
     border: 1.5px solid var(--line);
@@ -487,7 +522,8 @@
     font-weight: 800;
   }
 
-  .pill.active {
+  .pill.active,
+  .formation-btn.active {
     border-color: var(--amber);
     background: #F7E4B4;
     color: var(--soil);
@@ -533,8 +569,8 @@
 
   .map-node {
     position: absolute;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border: 3px solid var(--soil);
     border-radius: 50%;
     background: var(--honey);
@@ -543,14 +579,14 @@
 
   .map-node.claimed { background: var(--green); }
   .map-node.locked { background: #7A5A3A; }
-  .map-node.a { left: 10%; top: 58%; }
-  .map-node.b { left: 34%; top: 25%; }
-  .map-node.c { left: 55%; top: 52%; }
-  .map-node.d { left: 78%; top: 34%; }
+  .map-node.threat { background: var(--red); }
+  .map-node:nth-child(1) { left: 10%; top: 58%; }
+  .map-node:nth-child(2) { left: 32%; top: 25%; }
+  .map-node:nth-child(3) { left: 50%; top: 58%; }
+  .map-node:nth-child(4) { left: 66%; top: 27%; }
+  .map-node:nth-child(5) { left: 78%; top: 62%; }
 
-  .mutation-row {
-    align-items: flex-start;
-  }
+  .mutation-row { align-items: flex-start; }
 
   .mutation-gem {
     width: 38px;
@@ -561,13 +597,33 @@
     box-shadow: inset 0 0 0 2px rgba(34, 21, 8, 0.18);
   }
 
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 84px;
+    z-index: 20;
+    max-width: min(360px, 88vw);
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(34, 21, 8, 0.94);
+    color: var(--paper);
+    font-size: 13px;
+    font-weight: 800;
+    opacity: 0;
+    transform: translate(-50%, 12px);
+    transition: opacity 0.22s, transform 0.22s;
+    pointer-events: none;
+  }
+
+  .toast.active {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
   .bottom-nav {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
+    flex: 0 0 auto;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 0;
     padding: 9px 0 calc(12px + env(safe-area-inset-bottom));
     border-top: 1px solid #3D2411;
     background: var(--soil);
@@ -580,6 +636,7 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
+    background: transparent;
     color: #7A5A3A;
     font-family: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
     font-size: 10px;
@@ -602,33 +659,15 @@
     background: var(--honey);
   }
 
-  .static-note {
-    padding: 8px 12px;
-    border: 1px solid rgba(207, 131, 24, 0.32);
-    border-radius: 999px;
-    background: rgba(250, 242, 220, 0.72);
-    color: var(--root);
-    font-size: 11px;
-    font-weight: 800;
-    text-align: center;
-  }
-
   @media (min-width: 700px) {
-    body {
-      padding: 22px 0;
-    }
-
-    .keeper-shell {
-      border-radius: 28px;
-      overflow: hidden;
-    }
+    body { padding: 22px 0; }
+    .keeper-shell { border-radius: 28px; }
   }
 
   @media (max-width: 360px) {
     .page-body { padding-inline: 10px; }
     .chip-value { font-size: 17px; }
     .resource-chip { padding-inline: 6px; }
-    .image-caption h1 { font-size: 26px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -641,253 +680,759 @@
 </style>
 </head>
 <body>
-<main class="keeper-shell" aria-label="Static Colony Keeper UI proposal">
-  <section class="keeper-page" id="nest-page">
+<main class="keeper-shell" aria-label="Colony Keeper">
+  <section class="keeper-page active" id="nest-page" data-page="nest">
     <div class="page-image nest-motion" style="--header-image:url('assets/header_nest_living.png')">
-      <div class="motion-glow"></div>
-      <div class="motion-trail"></div>
-      <div class="image-caption">
-        <h1>Nest Health</h1>
-        <span>Static concept</span>
-      </div>
+      <div class="motion-glow"></div><div class="motion-trail"></div>
+      <div class="image-caption"><h1>Nest Health</h1><span id="nest-badge">Live colony</span></div>
     </div>
-    <div class="page-body">
-      <div class="resource-hud" aria-hidden="true">
-        <div class="resource-chip"><div class="chip-label">Food</div><div class="chip-value">118</div><div class="chip-rate">+6.8/s</div></div>
-        <div class="resource-chip"><div class="chip-label">Mats</div><div class="chip-value">72</div><div class="chip-rate">+2.6/s</div></div>
-        <div class="resource-chip"><div class="chip-label">Chitin</div><div class="chip-value">18</div><div class="chip-rate">+0.3/s</div></div>
-        <div class="resource-chip"><div class="chip-label">Phero</div><div class="chip-value">9</div><div class="chip-rate">+0.2/s</div></div>
-      </div>
-
-      <div class="status-strip">
-        <div class="status-main"><span class="status-dot"></span><span>Colony is stable</span></div>
-        <div class="status-hint">Safe preview</div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-row">
-          <div><div class="line-main">Colony</div><div class="line-sub">Capped. 0 idle · cap 32</div></div>
-        </div>
-        <div class="panel-row">
-          <div><div class="line-main">Production</div><div class="line-sub">Food <span class="rate-pos">+6.8/s</span> · Mats <span class="rate-pos">+2.6/s</span> · Chitin <span class="rate-pos">+0.3/s</span></div></div>
-        </div>
-        <div class="panel-row">
-          <div><div class="line-main">Territory</div><div class="line-sub">0 claimed · Food x1 · Tribute +0/s</div></div>
-        </div>
-      </div>
-
-      <div class="section-label"><span class="section-kicker">Workers</span></div>
-      <div class="stepper-row">
-        <div class="grow"><div class="line-main">Food</div><div class="line-sub">Gather leaves and fungus</div></div>
-        <div class="inert-stepper"><span class="step-part minus">-</span><span class="step-part count">25</span><span class="step-part plus">+</span></div>
-      </div>
-      <div class="stepper-row">
-        <div class="grow"><div class="line-main">Mining</div><div class="line-sub">Dig materials and chitin</div></div>
-        <div class="inert-stepper"><span class="step-part minus">-</span><span class="step-part count">12</span><span class="step-part plus">+</span></div>
-      </div>
-      <div class="stepper-row">
-        <div class="grow"><div class="line-main">Defense</div><div class="line-sub">Hold trails and support chitin</div></div>
-        <div class="inert-stepper"><span class="step-part minus">-</span><span class="step-part count">15</span><span class="step-part plus">+</span></div>
-      </div>
-
-      <div class="recommendation">
-        <div class="tiny-label" style="color:var(--amber)">Recommended</div>
-        <div class="line-main" style="margin-top:7px">Preview Sunny Rock</div>
-        <div class="line-sub">Safe: preview Sunny Rock now.</div>
-        <div class="amber-slab">Go to Campaign</div>
-      </div>
-      <div class="static-note">No controls are wired in this ideation build.</div>
-    </div>
+    <div class="page-body" id="nest-body"></div>
   </section>
 
-  <section class="keeper-page" id="build-page">
+  <section class="keeper-page" id="build-page" data-page="build">
     <div class="page-image build-motion" style="--header-image:url('assets/header_build_living.png')">
-      <div class="motion-glow"></div>
-      <div class="motion-trail"></div>
-      <div class="image-caption">
-        <h1>Build Chambers</h1>
-        <span>Layout pass</span>
-      </div>
+      <div class="motion-glow"></div><div class="motion-trail"></div>
+      <div class="image-caption"><h1>Build Chambers</h1><span id="build-badge">Construction</span></div>
     </div>
-    <div class="page-body">
-      <div class="section-label"><span class="section-kicker">Chamber Slots</span></div>
-      <div class="slot-grid">
-        <div class="slot-row">
-          <div class="slot-icon" style="--icon:url('assets/icons_chambers_conquest.png'); --pos:0 0"></div>
-          <div><div class="line-main">Granary Lv2</div><div class="line-sub">Food cap +80</div></div>
-          <div class="progress-track"><div class="progress-fill" style="--fill:72%"></div></div>
-        </div>
-        <div class="slot-row">
-          <div class="slot-icon" style="--icon:url('assets/icons_chambers_conquest.png'); --pos:33% 0"></div>
-          <div><div class="line-main">Nursery</div><div class="line-sub">Brood growth +18%</div></div>
-          <div class="progress-track"><div class="progress-fill" style="--fill:100%"></div></div>
-        </div>
-        <div class="slot-row">
-          <div class="slot-icon" style="--icon:url('assets/icons_chambers_conquest.png'); --pos:66% 0"></div>
-          <div><div class="line-main">Barracks</div><div class="line-sub">Unlock majors</div></div>
-          <div class="progress-track"><div class="progress-fill" style="--fill:42%"></div></div>
-        </div>
-        <div class="slot-row">
-          <div class="slot-icon" style="--icon:url('assets/icons_chambers_conquest.png'); --pos:100% 0"></div>
-          <div><div class="line-main">Empty Slot</div><div class="line-sub">Ready for next idea</div></div>
-          <div class="progress-track"><div class="progress-fill" style="--fill:0%"></div></div>
-        </div>
-      </div>
-
-      <div class="panel pad">
-        <div class="tiny-label" style="color:var(--amber)">Placement Preview</div>
-        <div class="line-main" style="margin-top:8px">Storehouse near Granary</div>
-        <div class="line-sub">Adjacent food storage could make the colony loop feel more legible without requiring an extra decision yet.</div>
-        <div class="pill-row" style="margin-top:12px">
-          <span class="pill active">Food chain</span>
-          <span class="pill">Brood chain</span>
-          <span class="pill">Defense chain</span>
-        </div>
-      </div>
-    </div>
+    <div class="page-body" id="build-body"></div>
   </section>
 
-  <section class="keeper-page" id="army-page">
+  <section class="keeper-page" id="army-page" data-page="army">
     <div class="page-image army-motion" style="--header-image:url('assets/header_army_living.png')">
-      <div class="motion-glow"></div>
-      <div class="motion-trail"></div>
-      <div class="image-caption">
-        <h1>Army Muster</h1>
-        <span>Readiness</span>
-      </div>
+      <div class="motion-glow"></div><div class="motion-trail"></div>
+      <div class="image-caption"><h1>Army Muster</h1><span id="army-badge">Readiness</span></div>
     </div>
-    <div class="page-body">
-      <div class="status-strip">
-        <div class="status-main"><span class="status-dot"></span><span>Safe readiness</span></div>
-        <div class="status-hint">Power 17.4</div>
-      </div>
-
-      <div class="section-label"><span class="section-kicker">Formation</span></div>
-      <div class="pill-row">
-        <span class="pill">Guarded</span>
-        <span class="pill active">Balanced</span>
-        <span class="pill">Aggressive</span>
-      </div>
-
-      <div class="section-label"><span class="section-kicker">Units</span></div>
-      <div class="unit-row">
-        <div class="unit-badge" style="--sheet:url('assets/ant_swarmer_sheet.png')"></div>
-        <div class="grow"><div class="line-main">Swarmers</div><div class="line-sub">Fast bodies for early pressure</div></div>
-        <div class="unit-count">12</div>
-      </div>
-      <div class="unit-row">
-        <div class="unit-badge" style="--sheet:url('assets/ant_soldier_sheet.png')"></div>
-        <div class="grow"><div class="line-main">Soldiers</div><div class="line-sub">Hold the front line</div></div>
-        <div class="unit-count">8</div>
-      </div>
-      <div class="unit-row">
-        <div class="unit-badge" style="--sheet:url('assets/ant_spitter_sheet.png')"></div>
-        <div class="grow"><div class="line-main">Spitters</div><div class="line-sub">Acid lanes and armor soften</div></div>
-        <div class="unit-count">3</div>
-      </div>
-
-      <div class="recommendation">
-        <div class="tiny-label" style="color:var(--amber)">Training Queue</div>
-        <div class="line-main" style="margin-top:7px">Major Crusher</div>
-        <div class="line-sub">33s remaining · visual only</div>
-        <div class="progress-track" style="margin-top:12px"><div class="progress-fill" style="--fill:58%"></div></div>
-      </div>
-    </div>
+    <div class="page-body" id="army-body"></div>
   </section>
 
-  <section class="keeper-page" id="map-page">
+  <section class="keeper-page" id="map-page" data-page="map">
     <div class="page-image map-motion" style="--header-image:url('assets/header_map_living.png')">
-      <div class="motion-glow"></div>
-      <div class="motion-trail"></div>
-      <div class="image-caption">
-        <h1>Garden Map</h1>
-        <span>Territory</span>
-      </div>
+      <div class="motion-glow"></div><div class="motion-trail"></div>
+      <div class="image-caption"><h1>Garden Map</h1><span id="map-badge">Territory</span></div>
     </div>
-    <div class="page-body">
-      <div class="map-panel" aria-hidden="true">
-        <span class="map-node claimed a"></span>
-        <span class="map-node b"></span>
-        <span class="map-node c"></span>
-        <span class="map-node locked d"></span>
-      </div>
-
-      <div class="section-label"><span class="section-kicker">Territories</span></div>
-      <div class="territory-row">
-        <div class="grow"><div class="line-main">Sunny Rock</div><div class="line-sub">Claimed · food tribute online</div></div>
-        <div class="territory-state">Held</div>
-      </div>
-      <div class="territory-row">
-        <div class="grow"><div class="line-main">Mossy Log</div><div class="line-sub">Safe preview · soft scavengers</div></div>
-        <div class="territory-state">Safe</div>
-      </div>
-      <div class="territory-row">
-        <div class="grow"><div class="line-main">Cracked Paver</div><div class="line-sub">Risky · armored beetles</div></div>
-        <div class="territory-state">Risky</div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-row">
-          <div><div class="line-main">Supply Line</div><div class="line-sub">1 trail secured · raid timer paused for this static prototype</div></div>
-        </div>
-      </div>
-    </div>
+    <div class="page-body" id="map-body"></div>
   </section>
 
-  <section class="keeper-page" id="evolve-page">
+  <section class="keeper-page" id="evolve-page" data-page="evolve">
     <div class="page-image evolve-motion" style="--header-image:url('assets/header_evolve_living.png')">
-      <div class="motion-glow"></div>
-      <div class="motion-trail"></div>
-      <div class="image-caption">
-        <h1>Evolve</h1>
-        <span>Mutations</span>
-      </div>
+      <div class="motion-glow"></div><div class="motion-trail"></div>
+      <div class="image-caption"><h1>Evolve</h1><span id="evolve-badge">Mutations</span></div>
     </div>
-    <div class="page-body">
-      <div class="section-label"><span class="section-kicker">Mutation Cards</span></div>
-      <div class="mutation-row">
-        <div class="mutation-gem"></div>
-        <div class="grow"><div class="line-main">Pheromone Weaving</div><div class="line-sub">Workers coordinate faster after stable food cycles.</div></div>
-      </div>
-      <div class="mutation-row">
-        <div class="mutation-gem" style="background:linear-gradient(160deg,#84B56E,var(--green) 58%,#25491D)"></div>
-        <div class="grow"><div class="line-main">Thicker Mandibles</div><div class="line-sub">Early combat identity for soldiers and swarmers.</div></div>
-      </div>
-      <div class="mutation-row">
-        <div class="mutation-gem" style="background:linear-gradient(160deg,#E9B5A7,var(--red) 58%,#5F1E17)"></div>
-        <div class="grow"><div class="line-main">Acid Glands</div><div class="line-sub">Longer-term visual hook for spitter-heavy colonies.</div></div>
-      </div>
-
-      <div class="recommendation">
-        <div class="tiny-label" style="color:var(--amber)">Generation Goal</div>
-        <div class="line-main" style="margin-top:7px">Unify the Garden</div>
-        <div class="line-sub">A clear prestige destination can sit here later. For now, this is a static composition slot.</div>
-      </div>
-    </div>
+    <div class="page-body" id="evolve-body"></div>
   </section>
 
-  <nav class="bottom-nav" aria-label="Static bottom navigation">
-    <div class="nav-item active">
+  <nav class="bottom-nav" aria-label="Primary">
+    <button class="nav-item active" data-tab="nest" type="button">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 12L12 4L21 12V20H15V15H9V20H3V12Z" fill="currentColor"/></svg>
       <span>Nest</span>
-    </div>
-    <div class="nav-item">
+    </button>
+    <button class="nav-item" data-tab="build" type="button">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="2" fill="currentColor"/><rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor"/><rect x="13" y="13" width="8" height="8" rx="2" fill="currentColor"/></svg>
       <span>Build</span>
-    </div>
-    <div class="nav-item">
+    </button>
+    <button class="nav-item" data-tab="army" type="button">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="6" cy="6" r="2" fill="currentColor"/><circle cx="18" cy="6" r="2" fill="currentColor"/><circle cx="6" cy="18" r="2" fill="currentColor"/><circle cx="18" cy="18" r="2" fill="currentColor"/></svg>
       <span>Army</span>
-    </div>
-    <div class="nav-item">
+    </button>
+    <button class="nav-item" data-tab="map" type="button">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>
       <span>Map</span>
-    </div>
-    <div class="nav-item">
+    </button>
+    <button class="nav-item" data-tab="evolve" type="button">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3L20.5 9L17 21H7L3.5 9L12 3Z" stroke="currentColor" stroke-width="2"/><path d="M12 8.5L14.5 14.5H9.5L12 8.5Z" fill="currentColor"/></svg>
       <span>Evolve</span>
-    </div>
+    </button>
   </nav>
 </main>
+<div class="toast" id="toast"></div>
+
+<script>
+const SAVE_KEY = "passive_ant_m2_save";
+const SAVE_VERSION = 4;
+const MAX_OFFLINE_SECONDS = 21600;
+
+const CHAMBERS = {
+  granary: { name: "Granary", cost: { materials: 20 }, time: 20, desc: "+80 food cap", cap: { food: 80 }, pos: "0 0" },
+  store: { name: "Reinforced Store", cost: { materials: 22 }, time: 24, desc: "+60 mats cap", cap: { materials: 60 }, pos: "33% 0" },
+  nursery: { name: "Nursery", cost: { food: 25, materials: 16 }, time: 28, desc: "Faster larvae growth", bonus: "nursery", pos: "66% 0" },
+  barracks: { name: "Barracks", cost: { food: 30, materials: 28, chitin: 5 }, time: 35, desc: "Train soldiers and majors", bonus: "barracks", pos: "100% 0" },
+  acid: { name: "Acid Alcove", cost: { materials: 34, chitin: 12 }, time: 38, desc: "Unlock spitters", bonus: "acid", pos: "0 33%" },
+  command: { name: "Command Node", cost: { materials: 42, pheromones: 8 }, time: 42, desc: "Army support +15%", bonus: "command", pos: "33% 33%" }
+};
+
+const UNITS = {
+  swarmers: { name: "Swarmer", cost: { food: 6, adults: 1 }, time: 10, power: 1.7, role: "Fast melee", unlock: null, sheet: "assets/ant_swarmer_sheet.png" },
+  soldiers: { name: "Soldier", cost: { food: 9, chitin: 2, adults: 1 }, time: 14, power: 2.4, role: "Holds the line", unlock: "barracks", sheet: "assets/ant_soldier_sheet.png" },
+  spitters: { name: "Spitter", cost: { food: 8, chitin: 4, adults: 1 }, time: 18, power: 3.0, role: "Ranged acid", unlock: "acid", sheet: "assets/ant_spitter_sheet.png" },
+  majors: { name: "Major", cost: { food: 12, chitin: 7, adults: 1 }, time: 24, power: 4.2, role: "Front breaker", unlock: "barracks", sheet: "assets/ant_major_crusher_sheet.png" }
+};
+
+const TERRITORIES = {
+  sunny_rock: { name: "Sunny Rock", enemy: "Beetle Guard", power: 9, reward: { foodMult: 0.1 }, tribute: { food: 0.05 }, unlocks: ["mossy_log", "compost_edge"], desc: "Warm stone with soft trails." },
+  mossy_log: { name: "Mossy Log", enemy: "Spider Scouts", power: 14, reward: { growthMult: 0.15 }, tribute: { chitin: 0.03 }, unlocks: ["cracked_paver"], desc: "Damp wood full of fungus." },
+  compost_edge: { name: "Compost Edge", enemy: "Soft Scavengers", power: 13, reward: { matsMult: 0.1 }, tribute: { materials: 0.05 }, unlocks: ["fallen_plum"], desc: "Rich scraps and loose soil." },
+  cracked_paver: { name: "Cracked Paver", enemy: "Armored Beetles", power: 20, reward: { chitinMult: 0.12 }, tribute: { chitin: 0.04 }, unlocks: ["fallen_plum"], desc: "Hard cover for tough enemies." },
+  fallen_plum: { name: "Fallen Plum", enemy: "Fruit Wasps", power: 28, reward: { pherMult: 0.18 }, tribute: { food: 0.08, pheromones: 0.03 }, unlocks: [], desc: "Sweet prize with flying danger." }
+};
+
+const MUTATIONS = {
+  weave: { name: "Pheromone Weaving", cost: { pheromones: 12 }, desc: "Workers produce 12% more.", kind: "economy" },
+  mandibles: { name: "Thicker Mandibles", cost: { chitin: 20, pheromones: 8 }, desc: "Army power +15%.", kind: "army" },
+  glands: { name: "Acid Glands", cost: { chitin: 28, pheromones: 16 }, desc: "Spitters and chitin income improve.", kind: "acid" }
+};
+
+const NAV_TITLES = {
+  nest: "Nest Health",
+  build: "Build Chambers",
+  army: "Army Muster",
+  map: "Garden Map",
+  evolve: "Evolve"
+};
+
+let activeTab = "nest";
+let lastFrame = performance.now();
+let renderClock = 0;
+let toastTimer = null;
+let G = loadGame() || makeState();
+
+function makeState() {
+  const territories = {};
+  Object.keys(TERRITORIES).forEach((id) => {
+    territories[id] = { unlocked: id === "sunny_rock", claimed: false, threat: false };
+  });
+  return {
+    saveVersion: SAVE_VERSION,
+    resources: { food: 70, materials: 38, chitin: 8, pheromones: 5 },
+    caps: { food: 120, materials: 80, chitin: 40, pheromones: 25 },
+    population: { adults: 18, larvae: 6 },
+    assigned: { foragers: 8, excavators: 6, soldiers: 2, nurses: 2 },
+    buildings: {
+      activeBuildSlotId: "slot_1",
+      slots: Array.from({ length: 6 }, (_, i) => ({
+        id: "slot_" + (i + 1),
+        buildingId: null,
+        level: 0,
+        status: i < 4 ? "empty" : "locked",
+        buildTimer: 0,
+        buildDuration: 0
+      }))
+    },
+    army: {
+      formation: "balanced",
+      units: { swarmers: 4, soldiers: 0, spitters: 0, majors: 0 },
+      wounded: { swarmers: 0, soldiers: 0, spitters: 0, majors: 0 },
+      trainingQueue: []
+    },
+    campaign: { selectedTerritoryId: "sunny_rock", territories },
+    evolution: { unlocked: [] },
+    session: { lastTickTs: Date.now() },
+    stats: { battlesWon: 0 }
+  };
+}
+
+function migrate(raw) {
+  const fresh = makeState();
+  const s = Object.assign(fresh, raw || {});
+  s.resources = Object.assign(fresh.resources, raw?.resources || {});
+  s.caps = Object.assign(fresh.caps, raw?.caps || {});
+  s.population = Object.assign(fresh.population, raw?.population || {});
+  s.assigned = Object.assign(fresh.assigned, raw?.assigned || {});
+  s.army = Object.assign(fresh.army, raw?.army || {});
+  s.army.units = Object.assign(fresh.army.units, raw?.army?.units || {});
+  s.army.wounded = Object.assign(fresh.army.wounded, raw?.army?.wounded || {});
+  s.army.trainingQueue = Array.isArray(raw?.army?.trainingQueue) ? raw.army.trainingQueue : [];
+  s.campaign = Object.assign(fresh.campaign, raw?.campaign || {});
+  s.campaign.territories = Object.assign(fresh.campaign.territories, raw?.campaign?.territories || {});
+  s.buildings = Object.assign(fresh.buildings, raw?.buildings || {});
+  s.buildings.slots = Array.isArray(raw?.buildings?.slots) ? raw.buildings.slots : fresh.buildings.slots;
+  s.evolution = Object.assign(fresh.evolution, raw?.evolution || {});
+  s.evolution.unlocked = Array.isArray(raw?.evolution?.unlocked) ? raw.evolution.unlocked : [];
+  s.session = Object.assign(fresh.session, raw?.session || {});
+  s.stats = Object.assign(fresh.stats, raw?.stats || {});
+  s.saveVersion = SAVE_VERSION;
+  return s;
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    return raw ? migrate(JSON.parse(raw)) : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function saveGame() {
+  G.session.lastTickTs = Date.now();
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); } catch (err) {}
+}
+
+function fmt(n) { return Math.floor(n).toLocaleString(); }
+function fmt1(n) { return (Math.round(n * 10) / 10).toFixed(1); }
+function capResource(v, cap) { return Math.max(0, Math.min(cap, v)); }
+function totalPop() { return Math.floor(G.population.adults + G.population.larvae); }
+function assignedTotal() { return Object.values(G.assigned).reduce((a, b) => a + b, 0); }
+function idleAnts() { return Math.max(0, Math.floor(G.population.adults) - assignedTotal()); }
+function claimedCount() { return Object.values(G.campaign.territories).filter((t) => t.claimed).length; }
+function hasMutation(id) { return G.evolution.unlocked.includes(id); }
+function completedChamber(id) { return G.buildings.slots.some((s) => s.buildingId === id && s.status === "complete"); }
+function selectedSlot() { return G.buildings.slots.find((s) => s.id === G.buildings.activeBuildSlotId) || G.buildings.slots.find((s) => s.status === "empty") || G.buildings.slots[0]; }
+
+function bonuses() {
+  const b = { foodMult: 1, matsMult: 1, chitinMult: 1, pherMult: 1, growthMult: 1, armyMult: 1 };
+  G.buildings.slots.forEach((slot) => {
+    if (slot.status !== "complete") return;
+    if (slot.buildingId === "nursery") b.growthMult += 0.18 + 0.06 * (slot.level || 1);
+    if (slot.buildingId === "command") b.armyMult += 0.15 + 0.05 * (slot.level || 1);
+  });
+  Object.keys(G.campaign.territories).forEach((id) => {
+    const state = G.campaign.territories[id];
+    const reward = TERRITORIES[id].reward || {};
+    if (!state.claimed) return;
+    b.foodMult += reward.foodMult || 0;
+    b.matsMult += reward.matsMult || 0;
+    b.chitinMult += reward.chitinMult || 0;
+    b.pherMult += reward.pherMult || 0;
+    b.growthMult += reward.growthMult || 0;
+  });
+  if (hasMutation("weave")) {
+    b.foodMult += 0.12;
+    b.matsMult += 0.12;
+    b.chitinMult += 0.12;
+    b.pherMult += 0.12;
+  }
+  if (hasMutation("mandibles")) b.armyMult += 0.15;
+  if (hasMutation("glands")) b.chitinMult += 0.12;
+  return b;
+}
+
+function updateCaps() {
+  const caps = { food: 120, materials: 80, chitin: 40, pheromones: 25 };
+  G.buildings.slots.forEach((slot) => {
+    if (slot.status !== "complete") return;
+    const chamber = CHAMBERS[slot.buildingId];
+    if (!chamber?.cap) return;
+    Object.keys(chamber.cap).forEach((key) => {
+      caps[key] += chamber.cap[key] * Math.max(1, slot.level || 1);
+    });
+  });
+  G.caps = caps;
+}
+
+function getTribute() {
+  const tribute = { food: 0, materials: 0, chitin: 0, pheromones: 0 };
+  Object.keys(G.campaign.territories).forEach((id) => {
+    if (!G.campaign.territories[id].claimed) return;
+    const t = TERRITORIES[id].tribute || {};
+    Object.keys(tribute).forEach((key) => tribute[key] += t[key] || 0);
+  });
+  return tribute;
+}
+
+function getRates() {
+  updateCaps();
+  const b = bonuses();
+  const tribute = getTribute();
+  const foodGross = G.assigned.foragers * 0.42 * b.foodMult + tribute.food;
+  const foodUse = G.population.adults * 0.035 + G.army.trainingQueue.length * 0.04;
+  return {
+    food: foodGross - foodUse,
+    materials: G.assigned.excavators * 0.2 * b.matsMult + tribute.materials,
+    chitin: (G.assigned.excavators * 0.035 + G.assigned.soldiers * 0.02) * b.chitinMult + tribute.chitin,
+    pheromones: (G.assigned.nurses * 0.025 + claimedCount() * 0.01) * b.pherMult + tribute.pheromones,
+    larvae: G.assigned.nurses * 0.018 * b.growthMult,
+    mature: 0.035 + completedChamber("nursery") * 0.025,
+    tribute
+  };
+}
+
+function tick(dt) {
+  updateCaps();
+  const r = getRates();
+  G.resources.food = capResource(G.resources.food + r.food * dt, G.caps.food);
+  G.resources.materials = capResource(G.resources.materials + r.materials * dt, G.caps.materials);
+  G.resources.chitin = capResource(G.resources.chitin + r.chitin * dt, G.caps.chitin);
+  G.resources.pheromones = capResource(G.resources.pheromones + r.pheromones * dt, G.caps.pheromones);
+  if (G.resources.food > 0) G.population.larvae += r.larvae * dt;
+  const matured = Math.min(G.population.larvae, r.mature * dt);
+  G.population.larvae -= matured;
+  G.population.adults += matured;
+  tickBuild(dt);
+  tickTraining(dt);
+  enforceAssignments();
+}
+
+function tickBuild(dt) {
+  const active = G.buildings.slots.find((slot) => slot.status === "building");
+  if (!active) return;
+  active.buildTimer = Math.max(0, active.buildTimer - dt);
+  if (active.buildTimer <= 0) {
+    active.status = "complete";
+    active.level = Math.max(1, active.level || 1);
+    showToast(CHAMBERS[active.buildingId].name + " complete");
+    saveGame();
+  }
+}
+
+function tickTraining(dt) {
+  if (!G.army.trainingQueue.length) return;
+  const item = G.army.trainingQueue[0];
+  item.timer = Math.max(0, item.timer - dt);
+  if (item.timer <= 0) {
+    G.army.units[item.unitId] += 1;
+    G.army.trainingQueue.shift();
+    showToast(UNITS[item.unitId].name + " trained");
+    saveGame();
+  }
+}
+
+function enforceAssignments() {
+  const max = Math.floor(G.population.adults);
+  let total = assignedTotal();
+  const order = ["nurses", "soldiers", "excavators", "foragers"];
+  while (total > max) {
+    const key = order.find((id) => G.assigned[id] > 0);
+    if (!key) break;
+    G.assigned[key] -= 1;
+    total -= 1;
+  }
+}
+
+function hasCost(cost) {
+  return Object.keys(cost).every((key) => {
+    if (key === "adults") return idleAnts() >= cost[key];
+    return (G.resources[key] || 0) >= cost[key];
+  });
+}
+
+function payCost(cost) {
+  if (!hasCost(cost)) {
+    showToast("Not enough resources");
+    return false;
+  }
+  Object.keys(cost).forEach((key) => {
+    if (key === "adults") G.population.adults -= cost[key];
+    else G.resources[key] -= cost[key];
+  });
+  return true;
+}
+
+function costText(cost) {
+  return Object.entries(cost).map(([key, val]) => `${val} ${key === "materials" ? "mats" : key === "pheromones" ? "phero" : key}`).join(", ");
+}
+
+function chamberUnlocked(id) {
+  if (["granary", "store", "nursery", "barracks"].includes(id)) return true;
+  if (id === "acid") return G.campaign.territories.cracked_paver?.claimed || hasMutation("glands");
+  if (id === "command") return claimedCount() >= 2;
+  return false;
+}
+
+function unitUnlocked(id) {
+  const unlock = UNITS[id].unlock;
+  return !unlock || completedChamber(unlock);
+}
+
+function armyPower() {
+  const formation = G.army.formation;
+  const mult = formation === "guarded" ? 0.94 : formation === "aggressive" ? 1.12 : 1;
+  const base = Object.keys(UNITS).reduce((sum, id) => sum + G.army.units[id] * UNITS[id].power, 0);
+  return base * mult * bonuses().armyMult;
+}
+
+function readinessFor(territory) {
+  const ratio = armyPower() / territory.power;
+  if (ratio >= 1.25) return "Safe";
+  if (ratio >= 0.78) return "Risky";
+  return "Dangerous";
+}
+
+function nextAction() {
+  if (G.resources.food < 10 || getRates().food < -0.5) return { kind: "starving", title: "Stabilize food", detail: "Move idle ants into Food before training." };
+  if (!completedChamber("barracks")) return { kind: "stable", title: "Build Barracks", detail: "Unlock stronger army units." };
+  const target = Object.keys(TERRITORIES).find((id) => G.campaign.territories[id].unlocked && !G.campaign.territories[id].claimed);
+  if (target) return { kind: "stable", title: `Scout ${TERRITORIES[target].name}`, detail: `${readinessFor(TERRITORIES[target])} readiness.` };
+  return { kind: "stable", title: "Unify garden", detail: "Spend pheromones on evolution." };
+}
+
+function resourceHud() {
+  const r = getRates();
+  const chip = (key, label, value, rate) => `
+    <div class="resource-chip ${key === "food" && rate < 0 ? "critical" : ""}">
+      <div class="chip-label">${label}</div>
+      <div class="chip-value">${fmt(value)}</div>
+      <div class="chip-rate ${rate < 0 ? "neg" : ""}">${rate >= 0 ? "+" : ""}${fmt1(rate)}/s</div>
+    </div>`;
+  return `<div class="resource-hud">
+    ${chip("food", "Food", G.resources.food, r.food)}
+    ${chip("materials", "Mats", G.resources.materials, r.materials)}
+    ${chip("chitin", "Chitin", G.resources.chitin, r.chitin)}
+    ${chip("pheromones", "Phero", G.resources.pheromones, r.pheromones)}
+  </div>`;
+}
+
+function statusStrip() {
+  const action = nextAction();
+  return `<div class="status-strip ${action.kind}">
+    <div class="status-main"><span class="status-dot"></span><span>${action.title}</span></div>
+    <div class="status-hint">${action.detail}</div>
+  </div>`;
+}
+
+function section(label) {
+  return `<div class="section-label"><span class="section-kicker">${label}</span></div>`;
+}
+
+function renderNest() {
+  const r = getRates();
+  const b = bonuses();
+  const body = document.getElementById("nest-body");
+  body.innerHTML = `
+    ${resourceHud()}
+    ${statusStrip()}
+    <div class="panel">
+      <div class="panel-row"><div><div class="line-main">Colony</div><div class="line-sub">${fmt(totalPop())} ants. ${fmt(idleAnts())} idle / ${fmt(G.population.adults)} adults. ${fmt(G.population.larvae)} larvae.</div></div></div>
+      <div class="panel-row"><div><div class="line-main">Production</div><div class="line-sub">Food <span class="${r.food >= 0 ? "rate-pos" : "rate-neg"}">${r.food >= 0 ? "+" : ""}${fmt1(r.food)}/s</span> - Mats <span class="rate-pos">+${fmt1(r.materials)}/s</span> - Chitin <span class="rate-pos">+${fmt1(r.chitin)}/s</span></div></div></div>
+      <div class="panel-row"><div><div class="line-main">Territory</div><div class="line-sub">${claimedCount()} claimed. Food x${fmt1(b.foodMult)}. Tribute +${fmt1(r.tribute.food)}/s food, +${fmt1(r.tribute.materials)}/s mats, +${fmt1(r.tribute.chitin)}/s chitin.</div></div></div>
+    </div>
+    ${section("Workers")}
+    ${assignmentRow("foragers", "Food", "Gather leaves and fungus")}
+    ${assignmentRow("excavators", "Mining", "Dig materials and chitin")}
+    ${assignmentRow("soldiers", "Defense", "Hold trails and support chitin")}
+    ${assignmentRow("nurses", "Nurses", "Tend brood and mature larvae")}
+    <div class="action-card">
+      <div class="tiny-label" style="color:var(--amber)">Recommended</div>
+      <div class="line-main" style="margin-top:7px">${nextAction().title}</div>
+      <div class="line-sub">${nextAction().detail}</div>
+      <button class="amber-btn" type="button" data-jump="${completedChamber("barracks") ? "map" : "build"}">${completedChamber("barracks") ? "Go to Map" : "Go to Build"}</button>
+    </div>`;
+}
+
+function assignmentRow(id, title, desc) {
+  return `<div class="stepper-row">
+    <div class="grow"><div class="line-main">${title}</div><div class="line-sub">${desc}</div></div>
+    <div class="stepper">
+      <button class="step-btn minus" type="button" data-assign="${id}" data-delta="-1">-</button>
+      <div class="step-count">${fmt(G.assigned[id])}</div>
+      <button class="step-btn plus" type="button" data-assign="${id}" data-delta="1">+</button>
+    </div>
+  </div>`;
+}
+
+function renderBuild() {
+  const body = document.getElementById("build-body");
+  const activeBuild = G.buildings.slots.some((s) => s.status === "building");
+  const sel = selectedSlot();
+  body.innerHTML = `
+    ${resourceHud()}
+    ${section("Chamber Slots")}
+    <div class="slot-grid">
+      ${G.buildings.slots.map((slot) => slotCard(slot, sel)).join("")}
+    </div>
+    ${section(sel?.status === "complete" ? "Upgrade" : "Build")}
+    <div class="picker-list">
+      ${buildPicker(sel, activeBuild)}
+    </div>`;
+}
+
+function slotCard(slot, sel) {
+  const chamber = CHAMBERS[slot.buildingId];
+  const pct = slot.status === "building" ? Math.max(0, Math.min(100, (1 - slot.buildTimer / slot.buildDuration) * 100)) : slot.status === "complete" ? 100 : 0;
+  const title = chamber ? `${chamber.name}${slot.level ? " Lv" + slot.level : ""}` : slot.status === "locked" ? "Locked Slot" : "Empty Slot";
+  const sub = slot.status === "building" ? `${Math.ceil(slot.buildTimer)}s remaining` : slot.status === "locked" ? "Claim more territory" : chamber ? chamber.desc : "Choose a chamber";
+  return `<button class="slot-card ${slot.status} ${sel?.id === slot.id ? "selected" : ""}" type="button" data-slot="${slot.id}" ${slot.status === "locked" ? "disabled" : ""}>
+    <div class="slot-icon" style="--pos:${chamber?.pos || "100% 100%"}"></div>
+    <div class="line-main">${title}</div>
+    <div class="line-sub">${sub}</div>
+    <div class="progress-track" style="margin-top:10px"><div class="progress-fill" style="--fill:${pct}%"></div></div>
+  </button>`;
+}
+
+function buildPicker(sel, activeBuild) {
+  if (!sel) return `<div class="panel pad"><div class="line-main">No slot selected</div></div>`;
+  if (sel.status === "building") return `<div class="panel pad"><div class="line-main">Construction in progress</div><div class="line-sub">The colony keeps working in the background.</div></div>`;
+  if (sel.status === "complete") {
+    const chamber = CHAMBERS[sel.buildingId];
+    const lvl = sel.level || 1;
+    const cost = scaleCost(chamber.cost, 1.65 * lvl);
+    const can = lvl < 3 && !activeBuild && hasCost(cost);
+    return `<button class="picker-btn" type="button" data-upgrade="${sel.id}" ${can ? "" : "disabled"}>
+      <div class="line-main">${lvl >= 3 ? "Max level" : `Upgrade ${chamber.name} to Lv${lvl + 1}`}</div>
+      <div class="line-sub">${lvl >= 3 ? chamber.desc : `${costText(cost)} - ${Math.round(chamber.time * 1.35)}s`}</div>
+    </button>`;
+  }
+  return Object.keys(CHAMBERS).filter(chamberUnlocked).map((id) => {
+    const chamber = CHAMBERS[id];
+    const alreadyBuilt = G.buildings.slots.some((s) => s.buildingId === id && s.status !== "empty");
+    const disabled = activeBuild || alreadyBuilt || !hasCost(chamber.cost);
+    return `<button class="picker-btn" type="button" data-build="${id}" ${disabled ? "disabled" : ""}>
+      <div class="line-main">${alreadyBuilt ? chamber.name + " built" : chamber.name}</div>
+      <div class="line-sub">${chamber.desc} - ${costText(chamber.cost)} - ${chamber.time}s</div>
+    </button>`;
+  }).join("");
+}
+
+function scaleCost(cost, mult) {
+  const next = {};
+  Object.keys(cost).forEach((key) => next[key] = Math.ceil(cost[key] * mult));
+  return next;
+}
+
+function renderArmy() {
+  const body = document.getElementById("army-body");
+  const p = armyPower();
+  body.innerHTML = `
+    ${resourceHud()}
+    <div class="status-strip">
+      <div class="status-main"><span class="status-dot"></span><span>${p >= 18 ? "Safe readiness" : p >= 10 ? "Risky readiness" : "Army is thin"}</span></div>
+      <div class="status-hint">Power ${fmt1(p)}</div>
+    </div>
+    ${section("Formation")}
+    <div class="pill-row">
+      ${["guarded", "balanced", "aggressive"].map((id) => `<button class="formation-btn ${G.army.formation === id ? "active" : ""}" type="button" data-formation="${id}">${id[0].toUpperCase() + id.slice(1)}</button>`).join("")}
+    </div>
+    ${section("Training Queue")}
+    ${trainingQueue()}
+    ${section("Units")}
+    ${Object.keys(UNITS).map(unitRow).join("")}`;
+}
+
+function trainingQueue() {
+  if (!G.army.trainingQueue.length) return `<div class="panel pad"><div class="line-main">No active training</div><div class="line-sub">Queue units below when resources allow.</div></div>`;
+  return G.army.trainingQueue.map((item) => {
+    const pct = Math.max(0, Math.min(100, (1 - item.timer / item.duration) * 100));
+    return `<div class="panel pad">
+      <div class="line-main">${UNITS[item.unitId].name}</div>
+      <div class="line-sub">${Math.ceil(item.timer)}s remaining</div>
+      <div class="progress-track" style="margin-top:10px"><div class="progress-fill" style="--fill:${pct}%"></div></div>
+    </div>`;
+  }).join("");
+}
+
+function unitRow(id) {
+  const unit = UNITS[id];
+  const unlocked = unitUnlocked(id);
+  const canTrain = unlocked && G.army.trainingQueue.length < 3 && hasCost(unit.cost);
+  return `<div class="unit-row">
+    <div class="unit-badge" style="--sheet:url('${unit.sheet}')"></div>
+    <div class="grow"><div class="line-main">${unit.name}</div><div class="line-sub">${unlocked ? `${unit.role} - ${costText(unit.cost)} - ${unit.time}s` : `Needs ${CHAMBERS[unit.unlock]?.name}`}</div></div>
+    <div class="unit-count">${fmt(G.army.units[id])}</div>
+    <button class="pill ${canTrain ? "active" : ""}" type="button" data-train="${id}" ${canTrain ? "" : "disabled"}>Train</button>
+  </div>`;
+}
+
+function renderMap() {
+  const body = document.getElementById("map-body");
+  const selected = G.campaign.selectedTerritoryId;
+  body.innerHTML = `
+    ${resourceHud()}
+    <div class="map-panel">
+      ${Object.keys(TERRITORIES).map((id) => {
+        const state = G.campaign.territories[id];
+        const cls = state.claimed ? "claimed" : state.unlocked ? "" : "locked";
+        return `<button class="map-node ${cls}" type="button" data-select-territory="${id}" aria-label="${TERRITORIES[id].name}" ${state.unlocked ? "" : "disabled"}></button>`;
+      }).join("")}
+    </div>
+    ${section("Territories")}
+    ${Object.keys(TERRITORIES).map((id) => territoryRow(id, id === selected)).join("")}`;
+}
+
+function territoryRow(id, selected) {
+  const t = TERRITORIES[id];
+  const state = G.campaign.territories[id];
+  const ready = readinessFor(t);
+  const canBattle = state.unlocked && !state.claimed && armyPower() >= t.power * 0.7;
+  const label = state.claimed ? "Held" : state.unlocked ? ready : "Locked";
+  return `<div class="territory-row" style="${selected ? "border-color:var(--amber)" : ""}">
+    <div class="grow"><div class="line-main">${t.name}</div><div class="line-sub">${state.unlocked ? `${t.enemy}. ${t.desc}` : "Scout adjacent territory first."}</div></div>
+    <div class="territory-state">${label}</div>
+    <button class="pill ${canBattle ? "active" : ""}" type="button" data-battle="${id}" ${canBattle ? "" : "disabled"}>${state.claimed ? "Bonus" : "Claim"}</button>
+  </div>`;
+}
+
+function renderEvolve() {
+  const body = document.getElementById("evolve-body");
+  body.innerHTML = `
+    ${resourceHud()}
+    ${section("Mutation Cards")}
+    ${Object.keys(MUTATIONS).map(mutationRow).join("")}
+    <div class="action-card">
+      <div class="tiny-label" style="color:var(--amber)">Generation Goal</div>
+      <div class="line-main" style="margin-top:7px">${claimedCount() >= Object.keys(TERRITORIES).length ? "Garden unified" : "Unify the Garden"}</div>
+      <div class="line-sub">${claimedCount()} of ${Object.keys(TERRITORIES).length} territories claimed. Mutations are live bonuses, not just cards.</div>
+    </div>`;
+}
+
+function mutationRow(id) {
+  const mut = MUTATIONS[id];
+  const unlocked = hasMutation(id);
+  const canBuy = !unlocked && hasCost(mut.cost);
+  return `<div class="mutation-row">
+    <div class="mutation-gem"></div>
+    <div class="grow"><div class="line-main">${mut.name}</div><div class="line-sub">${mut.desc} ${unlocked ? "Unlocked." : costText(mut.cost)}</div></div>
+    <button class="pill ${canBuy ? "active" : ""}" type="button" data-mutation="${id}" ${canBuy ? "" : "disabled"}>${unlocked ? "On" : "Evolve"}</button>
+  </div>`;
+}
+
+function changeAssignment(id, delta) {
+  if (delta > 0 && idleAnts() <= 0) return showToast("No idle adults available");
+  G.assigned[id] = Math.max(0, G.assigned[id] + delta);
+  enforceAssignments();
+  saveGame();
+  renderAll();
+}
+
+function startBuild(id) {
+  const slot = selectedSlot();
+  const chamber = CHAMBERS[id];
+  if (!slot || slot.status !== "empty") return showToast("Choose an empty chamber slot");
+  if (G.buildings.slots.some((s) => s.status === "building")) return showToast("One construction at a time");
+  if (!payCost(chamber.cost)) return;
+  Object.assign(slot, { buildingId: id, status: "building", buildTimer: chamber.time, buildDuration: chamber.time, level: 0 });
+  saveGame();
+  renderAll();
+}
+
+function startUpgrade(slotId) {
+  const slot = G.buildings.slots.find((s) => s.id === slotId);
+  if (!slot || slot.status !== "complete") return;
+  if ((slot.level || 1) >= 3) return showToast("Chamber already maxed");
+  if (G.buildings.slots.some((s) => s.status === "building")) return showToast("One construction at a time");
+  const chamber = CHAMBERS[slot.buildingId];
+  const cost = scaleCost(chamber.cost, 1.65 * (slot.level || 1));
+  if (!payCost(cost)) return;
+  slot.status = "building";
+  slot.buildDuration = Math.round(chamber.time * 1.35);
+  slot.buildTimer = slot.buildDuration;
+  slot.level = (slot.level || 1) + 1;
+  saveGame();
+  renderAll();
+}
+
+function trainUnit(id) {
+  const unit = UNITS[id];
+  if (!unitUnlocked(id)) return showToast("That unit is not unlocked yet");
+  if (G.army.trainingQueue.length >= 3) return showToast("Training queue is full");
+  if (!payCost(unit.cost)) return;
+  G.army.trainingQueue.push({ unitId: id, timer: unit.time, duration: unit.time });
+  saveGame();
+  renderAll();
+}
+
+function battleTerritory(id) {
+  const t = TERRITORIES[id];
+  const state = G.campaign.territories[id];
+  if (!state.unlocked || state.claimed) return;
+  const p = armyPower();
+  if (p < t.power * 0.7) return showToast("Train more army before claiming this");
+  state.claimed = true;
+  state.unlocked = true;
+  (t.unlocks || []).forEach((next) => {
+    if (G.campaign.territories[next]) G.campaign.territories[next].unlocked = true;
+  });
+  const lossChance = p < t.power * 1.15 ? 0.35 : 0.18;
+  Object.keys(G.army.units).forEach((uid) => {
+    if (G.army.units[uid] > 0 && Math.random() < lossChance) {
+      G.army.units[uid] -= 1;
+      G.army.wounded[uid] += 1;
+    }
+  });
+  G.stats.battlesWon += 1;
+  showToast(`${t.name} claimed`);
+  saveGame();
+  renderAll();
+}
+
+function buyMutation(id) {
+  if (hasMutation(id)) return;
+  const mut = MUTATIONS[id];
+  if (!payCost(mut.cost)) return;
+  G.evolution.unlocked.push(id);
+  showToast(`${mut.name} unlocked`);
+  saveGame();
+  renderAll();
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll(".keeper-page").forEach((page) => page.classList.toggle("active", page.dataset.page === tab));
+  document.querySelectorAll(".nav-item").forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tab));
+  const body = document.getElementById(`${tab}-body`);
+  if (body) body.scrollTop = 0;
+  renderAll();
+}
+
+function renderAll() {
+  updateCaps();
+  renderNest();
+  renderBuild();
+  renderArmy();
+  renderMap();
+  renderEvolve();
+  document.getElementById("nest-badge").textContent = `${fmt(totalPop())} ants`;
+  document.getElementById("build-badge").textContent = G.buildings.slots.some((s) => s.status === "building") ? "Building" : "Ready";
+  document.getElementById("army-badge").textContent = `Power ${fmt1(armyPower())}`;
+  document.getElementById("map-badge").textContent = `${claimedCount()} held`;
+  document.getElementById("evolve-badge").textContent = `${G.evolution.unlocked.length} active`;
+  bindActions();
+}
+
+function bindActions() {
+  document.querySelectorAll("[data-assign]").forEach((btn) => btn.onclick = () => changeAssignment(btn.dataset.assign, parseInt(btn.dataset.delta, 10)));
+  document.querySelectorAll("[data-jump]").forEach((btn) => btn.onclick = () => switchTab(btn.dataset.jump));
+  document.querySelectorAll("[data-slot]").forEach((btn) => btn.onclick = () => {
+    G.buildings.activeBuildSlotId = btn.dataset.slot;
+    renderBuild();
+    bindActions();
+  });
+  document.querySelectorAll("[data-build]").forEach((btn) => btn.onclick = () => startBuild(btn.dataset.build));
+  document.querySelectorAll("[data-upgrade]").forEach((btn) => btn.onclick = () => startUpgrade(btn.dataset.upgrade));
+  document.querySelectorAll("[data-formation]").forEach((btn) => btn.onclick = () => {
+    G.army.formation = btn.dataset.formation;
+    saveGame();
+    renderAll();
+  });
+  document.querySelectorAll("[data-train]").forEach((btn) => btn.onclick = () => trainUnit(btn.dataset.train));
+  document.querySelectorAll("[data-select-territory]").forEach((btn) => btn.onclick = () => {
+    G.campaign.selectedTerritoryId = btn.dataset.selectTerritory;
+    renderMap();
+    bindActions();
+  });
+  document.querySelectorAll("[data-battle]").forEach((btn) => btn.onclick = () => battleTerritory(btn.dataset.battle));
+  document.querySelectorAll("[data-mutation]").forEach((btn) => btn.onclick = () => buyMutation(btn.dataset.mutation));
+}
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.classList.add("active");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("active"), 1800);
+}
+
+document.querySelectorAll(".nav-item").forEach((btn) => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
+
+const elapsed = Math.min(MAX_OFFLINE_SECONDS, Math.max(0, (Date.now() - (G.session.lastTickTs || Date.now())) / 1000));
+if (elapsed > 1) {
+  for (let i = 0; i < Math.floor(elapsed); i += 1) tick(1);
+  saveGame();
+}
+
+function loop(now) {
+  const dt = Math.min(0.25, Math.max(0, (now - lastFrame) / 1000));
+  lastFrame = now;
+  tick(dt);
+  renderClock += dt;
+  if (renderClock >= 0.35) {
+    renderClock = 0;
+    renderAll();
+    saveGame();
+  }
+  requestAnimationFrame(loop);
+}
+
+renderAll();
+requestAnimationFrame(loop);
+</script>
 </body>
 </html>
